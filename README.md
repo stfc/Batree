@@ -2,6 +2,7 @@
 
 _Nuno Nobre, Karthikeyan Chockalingam, Daniel Ward and Olha Yaman, STFC Hartree Centre_
 
+[![DOI](https://zenodo.org/badge/1196347100.svg)](https://doi.org/10.5281/zenodo.19338017)
 [![Style Checks](https://github.com/stfc/Batree/actions/workflows/style.yml/badge.svg)](https://github.com/stfc/Batree/actions/workflows/style.yml)
 [![Integration Tests](https://github.com/stfc/Batree/actions/workflows/tests.yml/badge.svg)](https://github.com/stfc/Batree/actions/workflows/tests.yml)
 
