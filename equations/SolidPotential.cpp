@@ -32,6 +32,4 @@ SolidPotential::Update(const BlockVector & x, const Coefficient & j)
   Q->ParallelAssemble(b);
   b.SetSubVector(ess_tdof_list, 0.0);
   b.Neg();
-
-  Kmat.AddMult(x.GetBlock(SP), b, -1);
 }
