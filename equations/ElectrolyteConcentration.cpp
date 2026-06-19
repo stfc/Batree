@@ -48,6 +48,4 @@ ElectrolyteConcentration::Update(const BlockVector & x,
   Q->AddDomainIntegrator(new DomainLFIntegrator(source));
   Q->Assemble();
   Q->ParallelAssemble(b);
-
-  Kmat.AddMult(x.GetBlock(EC), b, -1);
 }

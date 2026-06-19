@@ -32,8 +32,6 @@ SolidConcentration::Update(const BlockVector & x, const Coefficient & j)
                            const_cast<mfem::Array<int> &>(surface_bdr));
   Q->Assemble();
   Q->ParallelAssemble(b);
-
-  Kmat.AddMult(x.GetBlock(SC + particle_id), b, -1);
 }
 
 real_t

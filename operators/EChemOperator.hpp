@@ -66,6 +66,9 @@ protected:
   /// Reference to solution true dof vector
   BlockVector & _x;
 
+  /// Block vectors wrapping the concentration and potential solution true dof vectors
+  BlockVector _xc, _xp;
+
   /// Reference to current time
   real_t & _t;
 

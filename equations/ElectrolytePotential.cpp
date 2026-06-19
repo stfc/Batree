@@ -42,6 +42,4 @@ ElectrolytePotential::Update(const BlockVector & x,
   Q->Assemble();
   Q->ParallelAssemble(b);
   b.SetSubVector(ess_tdof_list, 0.0);
-
-  Kmat.AddMult(x.GetBlock(EP), b, -1);
 }

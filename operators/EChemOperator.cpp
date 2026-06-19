@@ -13,6 +13,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _Ac(NULL),
     _Ap(NULL),
     _x(x),
+    _xc(),
+    _xp(),
     _t(t),
     _dt(dt),
     _ode_solver(ode_solver),
@@ -83,8 +85,13 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _ec_gfc.SetGridFunction(&_ec_gf);
   _sc_gfc.SetGridFunction(&_sc_gf);
 
-  // Set offsets for solution and rhs (potential and concentration) true vectors
+  // Set offsets for solution (complete, potential and concentration) true vectors
   _x.Update(_block_trueOffsets);
+  _xp.Update(_x, _potential_trueOffsets);
+  _xc.~BlockVector();
+  new (&_xc) BlockVector(_x, _block_trueOffsets[C], _concentration_trueOffsets);
+
+  // Set offsets for rhs (potential and concentration) true vectors
   _bp.Update(_potential_trueOffsets);
   _bc.Update(_concentration_trueOffsets);
 
@@ -145,22 +152,15 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
 }
 
 void
-EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & dx_dt)
+EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 {
   // Solve the equation:
-  //   M dx_dt = -K(x + dt*dx_dt) <=> (M + dt K) dx_dt = -Kx
-  // for dx_dt, where K is linearized by using x from the previous timestep
-
-  // Logically split dx_dt in two parts: potentials and concentrations
-  Array<int> offsets({_block_trueOffsets[P], _block_trueOffsets[C], _block_trueOffsets[NEQS]});
-  BlockVector dx_dt_blocked(dx_dt, offsets);
-  Vector & dxp_dt(dx_dt_blocked.GetBlock(0));
-  Vector & dxc_dt(dx_dt_blocked.GetBlock(1));
+  //   M x(t + dt) / dt = - K x(t + dt) + M x(t) / dt + b <=>
+  //   (M / dt + K) x(t + dt) = M x(t) / dt + b
+  // for x(t + dt), where K is linearized by using x from the previous timestep
 
   if (P2D)
   {
-    dx_dt = 0.;
-
     ParGridFunction j_gf(_x_l2space);
     ConstantCoefficient zero(0.);
 
@@ -169,52 +169,44 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & dx_dt)
       // save previous iteration reaction current
       j_gf.ProjectCoefficient(*_j);
 
-      // restore solution true dof vector; this is paramount to guarantee we
-      // use the old timestep in the rhs (which appears as a consequence of
-      // our rate formulation); note, however, that any coefficients
-      // dependent on the potentials should use the gridfunctions set below,
-      // which are on the new timestep, just like _j, NOT any gridfunctions
-      // obtained afresh from true vector _x which is now on the old timestep
-      _x.Add(-dt, dx_dt);
-
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
 
       // put _Ap and _bp together
-      _Ap->SetDiagonalBlock(EPP, new HypreParMatrix(_ep->GetK()), dt);
-      _Ap->SetDiagonalBlock(SPP, new HypreParMatrix(_sp->GetK()), dt);
+      _Ap->SetDiagonalBlock(EPP, new HypreParMatrix(_ep->GetK()));
+      _Ap->SetDiagonalBlock(SPP, new HypreParMatrix(_sp->GetK()));
       _bp.GetBlock(EPP) = _ep->GetZ();
       _bp.GetBlock(SPP) = _sp->GetZ();
 
-      // solve for dxp_dt (potentials rate)
+      // solve for xp(t + dt)
       _Solver.SetOperator(*_Ap);
-      _Solver.Mult(_bp, dxp_dt);
+      _Solver.Mult(_bp, _xp);
 
-      // temporarily advance solution true dof vector to set gridfunctions
-      _x.Add(dt, dx_dt);
       SetGridFunctionsFromTrueVectors();
     } while (j_gf.ComputeL2Error(*_j, _scl_irs) >
              _scl_threshold * j_gf.ComputeL2Error(zero, _scl_irs));
-
-    // restore solution true dof vector
-    _x.Add(-dt, dx_dt);
   }
 
   // assemble each individual block of _Ac and _bc
   UpdateConcentrationEquations();
 
   // put _Ac and _bc together
-  _Ac->SetDiagonalBlock(ECC, Add(1, _ec->GetM(), dt, _ec->GetK()));
+  _Ac->SetDiagonalBlock(ECC, Add(1. / dt, _ec->GetM(), 1, _ec->GetK()));
   _bc.GetBlock(ECC) = _ec->GetZ();
+  _ec->GetM().AddMult(_xc.GetBlock(ECC), _bc.GetBlock(ECC), 1. / dt);
   for (unsigned p = 0; p < NPAR; p++)
   {
-    _Ac->SetDiagonalBlock(SCC + p, Add(1, _sc[p]->GetM(), dt, _sc[p]->GetK()));
+    _Ac->SetDiagonalBlock(SCC + p, Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK()));
     _bc.GetBlock(SCC + p) = _sc[p]->GetZ();
+    _sc[p]->GetM().AddMult(_xc.GetBlock(SCC + p), _bc.GetBlock(SCC + p), 1. / dt);
   }
 
-  // solve for dxc_dt (concentrations rate)
+  // solve for xc(t + dt)
   _Solver.SetOperator(*_Ac);
-  _Solver.Mult(_bc, dxc_dt);
+  _Solver.Mult(_bc, _xc);
+
+  // k is the solution at t + dt, which we already have in _x
+  k.MakeRef(_x, 0);
 }
 
 void
