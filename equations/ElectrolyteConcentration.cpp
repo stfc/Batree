@@ -31,11 +31,13 @@ ElectrolyteConcentration::Update(const BlockVector & x,
   PWConstCoefficient D_scale_coeff(D_scale_vec);
   ProductCoefficient D(D_scale_coeff, D_coeff);
 
-  delete M;
-  M = new ParBilinearForm(&fespace);
-  M->AddDomainIntegrator(new MassIntegrator(mass));
-  M->Assemble(0); // keep sparsity pattern of M and K the same
-  M->FormSystemMatrix(ess_tdof_list, Mmat);
+  if (!M)
+  {
+    M = new ParBilinearForm(&fespace);
+    M->AddDomainIntegrator(new MassIntegrator(mass));
+    M->Assemble(0); // keep sparsity pattern of M and K the same
+    M->FormSystemMatrix(ess_tdof_list, Mmat);
+  }
 
   delete K;
   K = new ParBilinearForm(&fespace);
@@ -43,9 +45,11 @@ ElectrolyteConcentration::Update(const BlockVector & x,
   K->Assemble(0); // keep sparsity pattern of M and K the same
   K->FormSystemMatrix(ess_tdof_list, Kmat);
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  }
   Q->Assemble();
   Q->ParallelAssemble(b);
 }

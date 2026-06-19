@@ -35,10 +35,12 @@ ElectrolytePotential::Update(const BlockVector & x,
   K->Assemble();
   K->FormSystemMatrix(ess_tdof_list, Kmat);
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddDomainIntegrator(new DomainLFIntegrator(source));
-  Q->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+    Q->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+  }
   Q->Assemble();
   Q->ParallelAssemble(b);
   b.SetSubVector(ess_tdof_list, 0.0);
