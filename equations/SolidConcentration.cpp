@@ -31,13 +31,9 @@ SolidConcentration::Update(const BlockVector & x, const Coefficient & j)
   Q->AddBoundaryIntegrator(new BoundaryLFIntegrator(jr2),
                            const_cast<mfem::Array<int> &>(surface_bdr));
   Q->Assemble();
+  Q->ParallelAssemble(b);
 
-  delete Qvec;
-  Qvec = Q->ParallelAssemble();
-
-  Kmat.Mult(x.GetBlock(SC + particle_id), b);
-  b.Neg();
-  b += *Qvec;
+  Kmat.AddMult(x.GetBlock(SC + particle_id), b, -1);
 }
 
 real_t
