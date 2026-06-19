@@ -20,11 +20,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _ode_solver(ode_solver),
     _Solver(_x_h1space->GetComm())
 {
-  const real_t rel_tol = 1e-16;
-
-  _Solver.iterative_mode = false;
-  _Solver.SetRelTol(rel_tol);
-  _Solver.SetAbsTol(0.0);
+  _Solver.iterative_mode = true;
+  _Solver.SetRelTol(1e-11);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
   //_Solver.SetPreconditioner(_Prec);
