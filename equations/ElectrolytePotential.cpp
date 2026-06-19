@@ -40,12 +40,8 @@ ElectrolytePotential::Update(const BlockVector & x,
   Q->AddDomainIntegrator(new DomainLFIntegrator(source));
   Q->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
   Q->Assemble();
+  Q->ParallelAssemble(b);
+  b.SetSubVector(ess_tdof_list, 0.0);
 
-  delete Qvec;
-  Qvec = Q->ParallelAssemble();
-  Qvec->SetSubVector(ess_tdof_list, 0.0);
-
-  Kmat.Mult(x.GetBlock(EP), b);
-  b.Neg();
-  b += *Qvec;
+  Kmat.AddMult(x.GetBlock(EP), b, -1);
 }

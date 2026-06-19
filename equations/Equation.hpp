@@ -21,7 +21,6 @@ protected:
 
   HypreParMatrix Mmat;
   HypreParMatrix Kmat;
-  HypreParVector * Qvec = nullptr;
 
   HypreSmoother prec; // Preconditioner for the implicit solver
 
@@ -44,6 +43,5 @@ public:
     delete M;
     delete K;
     delete Q;
-    delete Qvec;
   }
 };
