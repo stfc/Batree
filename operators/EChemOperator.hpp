@@ -58,7 +58,10 @@ protected:
   Array<int> _concentration_trueOffsets;
 
   /// System matrices for concentration and potential eqs
-  BlockOperator *_Ac, *_Ap;
+  HypreParMatrix *_Ac = nullptr, *_Ap = nullptr;
+
+  /// 2D array of pointers for each block in the system matrices
+  Array2D<const HypreParMatrix *> _Bc{int(NPAR) + 1, int(NPAR) + 1}, _Bp{2, 2};
 
   /// Block vector for the dofs of quantities defined over _x_h1space (3 macro eqs plus _surface_ concentration)
   BlockVector _l;
