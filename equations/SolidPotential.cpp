@@ -19,15 +19,19 @@ SolidPotential::Update(const BlockVector & x, const Coefficient & j)
 
   PWConstCoefficient sigma(sigma_vec);
 
-  delete K;
-  K = new ParBilinearForm(&fespace);
-  K->AddDomainIntegrator(new DiffusionIntegrator(sigma));
-  K->Assemble();
-  K->FormSystemMatrix(ess_tdof_list, Kmat);
+  if (!K)
+  {
+    K = new ParBilinearForm(&fespace);
+    K->AddDomainIntegrator(new DiffusionIntegrator(sigma));
+    K->Assemble();
+    K->FormSystemMatrix(ess_tdof_list, Kmat);
+  }
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  }
   Q->Assemble();
   Q->ParallelAssemble(b);
   b.SetSubVector(ess_tdof_list, 0.0);

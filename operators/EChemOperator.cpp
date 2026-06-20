@@ -20,11 +20,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _ode_solver(ode_solver),
     _Solver(_x_h1space->GetComm())
 {
-  const real_t rel_tol = 1e-16;
-
-  _Solver.iterative_mode = false;
-  _Solver.SetRelTol(rel_tol);
-  _Solver.SetAbsTol(0.0);
+  _Solver.iterative_mode = true;
+  _Solver.SetRelTol(1e-11);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
   //_Solver.SetPreconditioner(_Prec);
@@ -94,6 +91,11 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   // Set offsets for rhs (potential and concentration) true vectors
   _bp.Update(_potential_trueOffsets);
   _bc.Update(_concentration_trueOffsets);
+
+  // Set offsets for lhs (potential and concentration) jacobians
+  _Ap = new BlockOperator(_potential_trueOffsets);
+  _Ac = new BlockOperator(_concentration_trueOffsets);
+  _Ac->owns_blocks = 1;
 
   // Set initial conditions (for electrolyte concentration)
   _x = 0.;
@@ -173,8 +175,8 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
       UpdatePotentialEquations();
 
       // put _Ap and _bp together
-      _Ap->SetDiagonalBlock(EPP, new HypreParMatrix(_ep->GetK()));
-      _Ap->SetDiagonalBlock(SPP, new HypreParMatrix(_sp->GetK()));
+      _Ap->SetDiagonalBlock(EPP, const_cast<HypreParMatrix *>(&_ep->GetK()));
+      _Ap->SetDiagonalBlock(SPP, const_cast<HypreParMatrix *>(&_sp->GetK()));
       _bp.GetBlock(EPP) = _ep->GetZ();
       _bp.GetBlock(SPP) = _sp->GetZ();
 
@@ -229,11 +231,6 @@ EChemOperator::SetGridFunctionsFromTrueVectors()
 void
 EChemOperator::UpdatePotentialEquations()
 {
-  // Rebuild _Ap, destroys owned (i.e. all) blocks
-  delete _Ap;
-  _Ap = new BlockOperator(_potential_trueOffsets);
-  _Ap->owns_blocks = 1;
-
   _ep->Update(_x, _ec_gfc, *_j);
   _sp->Update(_x, *_j);
 }
@@ -241,11 +238,6 @@ EChemOperator::UpdatePotentialEquations()
 void
 EChemOperator::UpdateConcentrationEquations()
 {
-  // Rebuild _Ac, destroys owned (i.e. all) blocks
-  delete _Ac;
-  _Ac = new BlockOperator(_concentration_trueOffsets);
-  _Ac->owns_blocks = 1;
-
   _ec->Update(_x, _ec_gfc, *_j);
   const Array<real_t> & j = GetParticleReactionCurrent();
   for (unsigned p = 0; p < NPAR; p++)
