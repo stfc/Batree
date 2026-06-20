@@ -20,7 +20,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _Solver.SetRelTol(1e-11);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
-  //_Solver.SetPreconditioner(_Prec);
+  _Solver.SetPreconditioner(_Prec);
 
   _block_offsets.SetSize(NMACRO + 1 + 1);
   _block_trueOffsets.SetSize(NEQS + 1);
