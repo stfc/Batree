@@ -10,11 +10,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   : TimeDependentOperator(ndofs, (real_t)0.0),
     _x_h1space(x_h1space),
     _r_h1space(r_h1space),
-    _Ac(NULL),
-    _Ap(NULL),
     _x(x),
-    _xc(),
-    _xp(),
     _t(t),
     _dt(dt),
     _ode_solver(ode_solver),
@@ -24,7 +20,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _Solver.SetRelTol(1e-11);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
-  //_Solver.SetPreconditioner(_Prec);
+  _Solver.SetPreconditioner(_Prec);
 
   _block_offsets.SetSize(NMACRO + 1 + 1);
   _block_trueOffsets.SetSize(NEQS + 1);
@@ -92,10 +88,9 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _bp.Update(_potential_trueOffsets);
   _bc.Update(_concentration_trueOffsets);
 
-  // Set offsets for lhs (potential and concentration) jacobians
-  _Ap = new BlockOperator(_potential_trueOffsets);
-  _Ac = new BlockOperator(_concentration_trueOffsets);
-  _Ac->owns_blocks = 1;
+  // Initialise 2D arrays of pointers for each block in the system matrices
+  _Bp = nullptr;
+  _Bc = nullptr;
 
   // Set initial conditions (for electrolyte concentration)
   _x = 0.;
@@ -175,8 +170,10 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
       UpdatePotentialEquations();
 
       // put _Ap and _bp together
-      _Ap->SetDiagonalBlock(EPP, const_cast<HypreParMatrix *>(&_ep->GetK()));
-      _Ap->SetDiagonalBlock(SPP, const_cast<HypreParMatrix *>(&_sp->GetK()));
+      _Bp(EPP, EPP) = &_ep->GetK();
+      _Bp(SPP, SPP) = &_sp->GetK();
+      delete _Ap;
+      _Ap = mfem::HypreParMatrixFromBlocks(_Bp);
       _bp.GetBlock(EPP) = _ep->GetZ();
       _bp.GetBlock(SPP) = _sp->GetZ();
 
@@ -193,15 +190,19 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   UpdateConcentrationEquations();
 
   // put _Ac and _bc together
-  _Ac->SetDiagonalBlock(ECC, Add(1. / dt, _ec->GetM(), 1, _ec->GetK()));
+  delete _Bc(ECC, ECC);
+  _Bc(ECC, ECC) = Add(1. / dt, _ec->GetM(), 1, _ec->GetK());
   _bc.GetBlock(ECC) = _ec->GetZ();
   _ec->GetM().AddMult(_xc.GetBlock(ECC), _bc.GetBlock(ECC), 1. / dt);
   for (unsigned p = 0; p < NPAR; p++)
   {
-    _Ac->SetDiagonalBlock(SCC + p, Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK()));
+    delete _Bc(SCC + p, SCC + p);
+    _Bc(SCC + p, SCC + p) = Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK());
     _bc.GetBlock(SCC + p) = _sc[p]->GetZ();
     _sc[p]->GetM().AddMult(_xc.GetBlock(SCC + p), _bc.GetBlock(SCC + p), 1. / dt);
   }
+  delete _Ac;
+  _Ac = mfem::HypreParMatrixFromBlocks(_Bc);
 
   // solve for xc(t + dt)
   _Solver.SetOperator(*_Ac);
