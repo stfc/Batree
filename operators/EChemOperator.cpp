@@ -141,7 +141,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   // Solve the equation:
   //   M x(t + dt) / dt = - K x(t + dt) + M x(t) / dt + b <=>
   //   (M / dt + K) x(t + dt) = M x(t) / dt + b
-  // for x(t + dt), where K is linearized by using x from the previous timestep
+  // for k := x(t + dt), where K is linearized by using x from the previous timestep
 
   if (P2D)
   {
