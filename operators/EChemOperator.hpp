@@ -48,8 +48,6 @@ protected:
   OpenCircuitPotentialCoefficient * _ocp;
   OverPotentialCoefficient * _op;
 
-  /// For the four gridfunctions over _x_h1space (3 macro eqs plus _surface_ concentration)
-  Array<int> _block_offsets;
   /// For solution true vector (3 macros eqs plus NPAR _radial_ concentrations)
   Array<int> _block_trueOffsets;
   /// For rhs true vectors (2 macro eqs)
@@ -62,9 +60,6 @@ protected:
 
   /// 2D array of pointers for each block in the system matrices
   Array2D<const HypreParMatrix *> _Bc{int(NPAR) + 1, int(NPAR) + 1}, _Bp{2, 2};
-
-  /// Block vector for the dofs of quantities defined over _x_h1space (3 macro eqs plus _surface_ concentration)
-  BlockVector _l;
 
   /// Reference to solution true dof vector
   BlockVector & _x;
