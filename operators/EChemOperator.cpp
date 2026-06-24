@@ -10,6 +10,14 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   : TimeDependentOperator(ndofs, (real_t)0.0),
     _x_h1space(x_h1space),
     _r_h1space(r_h1space),
+    _ep_gf(_x_h1space),
+    _sp_gf(_x_h1space),
+    _ec_gf(_x_h1space),
+    _sc_gf(_x_h1space),
+    _ep_gfc(&_ep_gf),
+    _sp_gfc(&_sp_gf),
+    _ec_gfc(&_ec_gf),
+    _sc_gfc(&_sc_gf),
     _x(x),
     _t(t),
     _dt(dt),
@@ -22,16 +30,9 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _Solver.SetPrintLevel(0);
   _Solver.SetPreconditioner(_Prec);
 
-  _block_offsets.SetSize(NMACRO + 1 + 1);
   _block_trueOffsets.SetSize(NEQS + 1);
   _potential_trueOffsets.SetSize(NMACROP + 1);
   _concentration_trueOffsets.SetSize(NMACROC + NPAR + 1);
-
-  _block_offsets[0] = 0;
-  _block_offsets[EP + 1] = _x_h1space->GetVSize();
-  _block_offsets[SP + 1] = _x_h1space->GetVSize();
-  _block_offsets[EC + 1] = _x_h1space->GetVSize();
-  _block_offsets[SC + 1] = _x_h1space->GetVSize();
 
   _block_trueOffsets[0] = 0;
   _block_trueOffsets[EP + 1] = _x_h1space->GetTrueVSize();
@@ -51,7 +52,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _concentration_trueOffsets[SCC + 1 + p] = _r_h1space[p]->GetTrueVSize();
   }
 
-  _block_offsets.PartialSum();
   _block_trueOffsets.PartialSum();
   _potential_trueOffsets.PartialSum();
   _concentration_trueOffsets.PartialSum();
@@ -61,22 +61,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     std::cout << "Variables: " << NEQS << std::endl;
     std::cout << "Unknowns (rank 0): " << _block_trueOffsets[NEQS] << std::endl;
   }
-
-  // Set offsets for full dof vector
-  _l.Update(_block_offsets);
-  _l = 0.;
-
-  // Initialise gridfunctions to use the appropriate section of the full dof vector _l
-  _ep_gf.MakeRef(_x_h1space, _l, _block_offsets[EP]);
-  _sp_gf.MakeRef(_x_h1space, _l, _block_offsets[SP]);
-  _ec_gf.MakeRef(_x_h1space, _l, _block_offsets[EC]);
-  _sc_gf.MakeRef(_x_h1space, _l, _block_offsets[SC]);
-
-  // Wrap gridfunctions in coefficients
-  _ep_gfc.SetGridFunction(&_ep_gf);
-  _sp_gfc.SetGridFunction(&_sp_gf);
-  _ec_gfc.SetGridFunction(&_ec_gf);
-  _sc_gfc.SetGridFunction(&_sc_gf);
 
   // Set offsets for solution (complete, potential and concentration) true vectors
   _x.Update(_block_trueOffsets);
@@ -92,10 +76,13 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _Bp = nullptr;
   _Bc = nullptr;
 
-  // Set initial conditions (for electrolyte concentration)
+  // Set initial conditions (in particular for electrolyte concentration)
   _x = 0.;
   _x.GetBlock(EC) = CE0;
-  _ec_gf.SetFromTrueDofs(_x.GetBlock(EC));
+  _ep_gf = 0.;
+  _sp_gf = 0.;
+  _ec_gf = CE0;
+  _sc_gf = 0.;
 
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
