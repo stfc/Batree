@@ -342,26 +342,16 @@ EChemOperator::GetParticleReactionCurrent()
   {
     ParGridFunction j_gf(_x_h1space);
 
-    { // Despicable trick to project discontinuous current onto H1
-      Array<int> electrode_particle_dofs;
-      Array<int> mutated_elements;
-      for (unsigned p = 0; p < NPAR; p++)
-        if (_sc[p]->IsParticleOwned())
-        {
-          int dof = _sc[p]->GetParticleDof();
-          int elem = _x_h1space->GetElementForDof(dof);
-          electrode_particle_dofs.Append(dof);
-          if (_x_h1space->GetAttribute(elem) == SEP)
-          {
-            mutated_elements.Append(elem);
-            _x_h1space->GetParMesh()->SetAttribute(elem, _sc[p]->GetParticleRegion());
-          }
-        }
+    { // ProjectDiscCoefficient uses the element w/ maximal attribute for shared dofs
+      for (int elem = 0; elem < _x_h1space->GetParMesh()->GetNE(); elem++)
+        if (_x_h1space->GetAttribute(elem) == SEP)
+          _x_h1space->GetParMesh()->SetAttribute(elem, 0);
 
-      j_gf.ProjectCoefficient(*_j, electrode_particle_dofs);
+      j_gf.ProjectDiscCoefficient(*_j);
 
-      for (auto & elem : mutated_elements)
-        _x_h1space->GetParMesh()->SetAttribute(elem, SEP);
+      for (int elem = 0; elem < _x_h1space->GetParMesh()->GetNE(); elem++)
+        if (_x_h1space->GetAttribute(elem) == 0)
+          _x_h1space->GetParMesh()->SetAttribute(elem, SEP);
     }
 
     for (unsigned p = 0; p < NPAR; p++)
