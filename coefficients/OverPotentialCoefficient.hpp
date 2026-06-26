@@ -10,26 +10,16 @@ private:
   ExchangeCurrentCoefficient * _jex = nullptr;
   OpenCircuitPotentialCoefficient * _ocp = nullptr;
 
-  FunctionCoefficient _rp_ne_fc;
-  FunctionCoefficient _rp_pe_fc;
+  const real_t * _rpe = nullptr;
+  const real_t * _rpp = nullptr;
   PWCoefficient _rp_pwc;
 
-  SumCoefficient _rel_se_sc;
-  SumCoefficient _abs_se_sc;
-
   PWConstCoefficient _op_pwcc;
-  SumCoefficient _op_sc;
 
 public:
   /// SPM(e)
   OverPotentialCoefficient(const real_t & T, ExchangeCurrentCoefficient & jex)
-    : _jex(&jex),
-      _rp_ne_fc([](const Vector &) { return 0; }),
-      _rp_pe_fc([](const Vector &) { return 0; }),
-      _rel_se_sc(0, *_solid_potential_gfc),
-      _abs_se_sc(0, *_solid_potential_gfc),
-      _op_pwcc(3),
-      _op_sc(0, *_solid_potential_gfc)
+    : _jex(&jex), _op_pwcc(3)
   {
   }
 
@@ -39,17 +29,7 @@ public:
                            GridFunctionCoefficient & sp,
                            GridFunctionCoefficient & ep,
                            OpenCircuitPotentialCoefficient & ocp)
-    : _solid_potential_gfc(&sp),
-      _electrolyte_potential_gfc(&ep),
-      _ocp(&ocp),
-      _rp_ne_fc([&](const Vector &) { return 0 - rpe; }),
-      _rp_pe_fc([&](const Vector &) { return rpp - rpe; }),
-      _rp_pwc(Array<int>({NE, PE}),
-              Array<Coefficient *>({static_cast<Coefficient *>(&_rp_ne_fc),
-                                    static_cast<Coefficient *>(&_rp_pe_fc)})),
-      _rel_se_sc(*_solid_potential_gfc, *_electrolyte_potential_gfc, 1, -1),
-      _abs_se_sc(_rel_se_sc, _rp_pwc),
-      _op_sc(_abs_se_sc, *_ocp, 1, -1)
+    : _solid_potential_gfc(&sp), _electrolyte_potential_gfc(&ep), _ocp(&ocp), _rpe(&rpe), _rpp(&rpp)
   {
   }
 
@@ -64,6 +44,24 @@ public:
   /// P2D
   virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
   {
-    return _op_sc.Eval(T, ip);
+    switch (T.Attribute)
+    {
+      case NE:
+      {
+        const real_t sp = _solid_potential_gfc->Eval(T, ip);
+        const real_t ep = _electrolyte_potential_gfc->Eval(T, ip);
+        const real_t ocp = _ocp->Eval(T, ip);
+        return sp - ep - ocp - *_rpe;
+      }
+      case PE:
+      {
+        const real_t sp = _solid_potential_gfc->Eval(T, ip);
+        const real_t ep = _electrolyte_potential_gfc->Eval(T, ip);
+        const real_t ocp = _ocp->Eval(T, ip);
+        return sp - ep - ocp + *_rpp - *_rpe;
+      }
+      default:
+        return 0;
+    }
   }
 };

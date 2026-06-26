@@ -9,6 +9,7 @@
 #include "coefficients/OpenCircuitPotentialCoefficient.hpp"
 #include "coefficients/OverPotentialCoefficient.hpp"
 #include "coefficients/ReactionCurrentCoefficient.hpp"
+#include "coefficients/ElectrodeReactionCurrentCoefficient.hpp"
 
 using namespace mfem;
 

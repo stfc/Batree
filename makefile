@@ -22,6 +22,7 @@ EQ_INC_FILES = SolidConcentration.hpp \
                Equation.hpp
 CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
                ReactionCurrentCoefficient.hpp \
+               ElectrodeReactionCurrentCoefficient.hpp \
                OpenCircuitPotentialCoefficient.hpp \
                OverPotentialCoefficient.hpp
 CL_INC_FILES = LGM50.hpp
