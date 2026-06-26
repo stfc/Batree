@@ -504,7 +504,7 @@ real_t
 EChemOperator::GetVoltageMarquisCorrection()
 {
   PWCoefficient ce_pwc;
-  QuadratureSpace x_qspace(_x_h1space->GetParMesh(), 2 * _x_h1space->FEColl()->GetOrder());
+  QuadratureSpace x_qspace(_x_h1space->GetParMesh(), _x_h1space->FEColl()->GetOrder());
 
   ce_pwc.UpdateCoefficient(NE, _ec_gfc);
   real_t ce_ne_int = x_qspace.Integrate(ce_pwc) * (NX / NNE);
