@@ -13,6 +13,9 @@ private:
   TransformedCoefficient _jex_ne_tc;
   TransformedCoefficient _jex_pe_tc;
 
+  const real_t * _kn = nullptr;
+  const real_t * _kp = nullptr;
+
   Vector _jex_vec;
   PWConstCoefficient _jex_pwcc;
   PWCoefficient _jex_pwc;
@@ -43,7 +46,8 @@ public:
       _scn(&scn),
       _scp(&scp),
       _jex_ne_tc(_electrolyte_concentration_gfc, [=](real_t ec) { return kn * sqrt(ec); }),
-      _jex_pe_tc(_electrolyte_concentration_gfc, [=](real_t ec) { return kp * sqrt(ec); })
+      _jex_pe_tc(_electrolyte_concentration_gfc, [=](real_t ec) { return kp * sqrt(ec); }),
+      _jex_pwcc(3)
   {
   }
 
@@ -54,15 +58,10 @@ public:
                              GridFunctionCoefficient & ec)
     : _surface_concentration_gfc(&sc),
       _electrolyte_concentration_gfc(&ec),
-      _jex_ne_tc(_surface_concentration_gfc,
-                 _electrolyte_concentration_gfc,
-                 [=](real_t sc, real_t ec) { return kn * sqrt(sc * ec * (1 - sc)); }),
-      _jex_pe_tc(_surface_concentration_gfc,
-                 _electrolyte_concentration_gfc,
-                 [=](real_t sc, real_t ec) { return kp * sqrt(sc * ec * (1 - sc)); }),
-      _jex_pwc(Array<int>({NE, PE}),
-               Array<Coefficient *>({static_cast<Coefficient *>(&_jex_ne_tc),
-                                     static_cast<Coefficient *>(&_jex_pe_tc)}))
+      _jex_ne_tc(nullptr, [](real_t) { return 0; }),
+      _jex_pe_tc(nullptr, [](real_t) { return 0; }),
+      _kn(&kn),
+      _kp(&kp)
   {
   }
 
@@ -87,10 +86,8 @@ public:
       real_t integral_pe = x_qspace.Integrate(_jex_pwc);
       _jex_pwc.ZeroCoefficient(PE);
 
-      Vector c({integral_ne * sqrt(*_scn * (1 - *_scn)) / NNE * NX,
-                0.,
-                integral_pe * sqrt(*_scp * (1 - *_scp)) / NPE * NX});
-      _jex_pwcc.UpdateConstants(c);
+      _jex_pwcc(NE) = integral_ne * sqrt(*_scn * (1 - *_scn)) / NNE * NX;
+      _jex_pwcc(PE) = integral_pe * sqrt(*_scp * (1 - *_scp)) / NPE * NX;
     }
     /// SPM
     else
@@ -105,6 +102,22 @@ public:
   /// P2D
   virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
   {
-    return _jex_pwc.Eval(T, ip);
+    switch (T.Attribute)
+    {
+      case NE:
+      {
+        const real_t sc = _surface_concentration_gfc->Eval(T, ip);
+        const real_t ec = _electrolyte_concentration_gfc->Eval(T, ip);
+        return *_kn * sqrt(sc * ec * (1 - sc));
+      }
+      case PE:
+      {
+        const real_t sc = _surface_concentration_gfc->Eval(T, ip);
+        const real_t ec = _electrolyte_concentration_gfc->Eval(T, ip);
+        return *_kp * sqrt(sc * ec * (1 - sc));
+      }
+      default:
+        return 0;
+    }
   }
 };
