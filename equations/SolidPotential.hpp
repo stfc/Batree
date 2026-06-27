@@ -12,6 +12,5 @@ public:
   {
     f.GetEssentialTrueDofs(Array<int>({1, 1}), ess_tdof_list);
   }
-  virtual void Update(const BlockVector & x, const Coefficient & j);
-  virtual void Update(const BlockVector &, const GridFunctionCoefficient &, const Coefficient &) {}
+  virtual void Update(const Coefficient & j) override;
 };

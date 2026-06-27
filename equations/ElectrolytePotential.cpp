@@ -2,9 +2,7 @@
 #include "equations/ElectrolytePotential.hpp"
 
 void
-ElectrolytePotential::Update(const BlockVector & x,
-                             const GridFunctionCoefficient & ec_gfc,
-                             const Coefficient & j)
+ElectrolytePotential::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
 {
   // Source term.
   Vector source_vec({/* NE */ AN /* length scaling */ * (LNE / NNE * NX),
