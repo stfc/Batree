@@ -2,7 +2,7 @@
 #include "equations/SolidPotential.hpp"
 
 void
-SolidPotential::Update(const BlockVector & x, const Coefficient & j)
+SolidPotential::Update(const Coefficient & j)
 {
   // Source term.
   Vector source_vec({/* NE */ AN /* length scaling */ * (LNE / NNE * NX),

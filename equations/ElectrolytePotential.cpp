@@ -2,9 +2,7 @@
 #include "equations/ElectrolytePotential.hpp"
 
 void
-ElectrolytePotential::Update(const BlockVector & x,
-                             const GridFunctionCoefficient & ec_gfc,
-                             const Coefficient & j)
+ElectrolytePotential::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
 {
   // Source term.
   Vector source_vec({/* NE */ AN /* length scaling */ * (LNE / NNE * NX),
@@ -24,10 +22,9 @@ ElectrolytePotential::Update(const BlockVector & x,
   ProductCoefficient kappa_eff(b_part, kappa);
 
   GradientGridFunctionCoefficient grad_ec(ec_gfc.GetGridFunction());
-  RatioCoefficient ec_inv(1., const_cast<GridFunctionCoefficient &>(ec_gfc));
+  RatioCoefficient ec_inv(2 * T * (1 - TPLUS), const_cast<GridFunctionCoefficient &>(ec_gfc));
   ScalarVectorProductCoefficient grad_ln_ec(ec_inv, grad_ec);
-  ScalarVectorProductCoefficient prod_part(kappa_eff, grad_ln_ec);
-  ScalarVectorProductCoefficient grad_ln_ec_kappad(2 * T * (1 - TPLUS), prod_part);
+  ScalarVectorProductCoefficient grad_ln_ec_kappad(kappa_eff, grad_ln_ec);
 
   delete K;
   K = new ParBilinearForm(&fespace);

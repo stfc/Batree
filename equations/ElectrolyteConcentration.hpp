@@ -9,7 +9,5 @@ class ElectrolyteConcentration : public Equation
 {
 public:
   using Equation::Equation;
-  virtual void Update(const BlockVector &, const Coefficient &) {}
-  virtual void
-  Update(const BlockVector & x, const GridFunctionCoefficient & ec_gfc, const Coefficient & j);
+  virtual void Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j) override;
 };

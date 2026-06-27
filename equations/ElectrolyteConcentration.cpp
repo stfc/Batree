@@ -2,9 +2,7 @@
 #include "equations/ElectrolyteConcentration.hpp"
 
 void
-ElectrolyteConcentration::Update(const BlockVector & x,
-                                 const GridFunctionCoefficient & ec_gfc,
-                                 const Coefficient & j)
+ElectrolyteConcentration::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
 {
   // Mass coefficient.
   Vector mass_vec({/* NE */ EPS_N /* length scaling */ * (LNE / NNE * NX),

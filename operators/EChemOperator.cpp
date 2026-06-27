@@ -219,17 +219,17 @@ EChemOperator::SetGridFunctionsFromTrueVectors()
 void
 EChemOperator::UpdatePotentialEquations()
 {
-  _ep->Update(_x, _ec_gfc, *_j);
-  _sp->Update(_x, *_j);
+  _ep->Update(_ec_gfc, *_j);
+  _sp->Update(*_j);
 }
 
 void
 EChemOperator::UpdateConcentrationEquations()
 {
-  _ec->Update(_x, _ec_gfc, *_j);
+  _ec->Update(_ec_gfc, *_j);
   const Array<real_t> & j = GetParticleReactionCurrent();
   for (unsigned p = 0; p < NPAR; p++)
-    _sc[p]->Update(_x, ConstantCoefficient(j[p]));
+    _sc[p]->Update(ConstantCoefficient(j[p]));
 }
 
 //
