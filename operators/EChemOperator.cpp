@@ -147,6 +147,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   {
     ParGridFunction j_gf(_x_l2space);
     ConstantCoefficient zero(0.);
+    _ep->Reset();
 
     do
     {
