@@ -83,7 +83,7 @@ protected:
   HypreSmoother _Prec;
 
   /// Auxiliary rhs vectors for concentrations and potential eqs
-  mutable BlockVector _bc, _bp;
+  BlockVector _bc, _bp;
 
   /// Self-consistency loop "L2" error threshold
   const real_t _scl_threshold = 1e-9;
