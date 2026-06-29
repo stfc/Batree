@@ -22,8 +22,6 @@ protected:
   HypreParMatrix Mmat;
   HypreParMatrix Kmat;
 
-  HypreSmoother prec; // Preconditioner for the implicit solver
-
   Vector b; // auxiliary vector
 
 public:
