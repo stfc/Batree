@@ -89,10 +89,10 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
   {
-    _ep = new ElectrolytePotential(*_x_h1space);
-    _sp = new SolidPotential(*_x_h1space);
+    _ep = new ElectrolytePotential(*_x_h1space, *_j, _ec_gfc);
+    _sp = new SolidPotential(*_x_h1space, *_j);
   }
-  _ec = new ElectrolyteConcentration(*_x_h1space);
+  _ec = new ElectrolyteConcentration(*_x_h1space, *_j, _ec_gfc);
 
   if (SPM || SPMe)
   {
@@ -217,17 +217,17 @@ EChemOperator::SetGridFunctionsFromTrueVectors()
 void
 EChemOperator::UpdatePotentialEquations()
 {
-  _ep->Update(_ec_gfc, *_j);
-  _sp->Update(*_j);
+  _ep->Update();
+  _sp->Update();
 }
 
 void
 EChemOperator::UpdateConcentrationEquations()
 {
-  _ec->Update(_ec_gfc, *_j);
+  _ec->Update();
   const Array<real_t> & j = GetParticleReactionCurrent();
   for (unsigned p = 0; p < NPAR; p++)
-    _sc[p]->Update(ConstantCoefficient(j[p]));
+    _sc[p]->Update(j[p]);
 }
 
 //

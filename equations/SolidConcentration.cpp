@@ -1,7 +1,7 @@
 #include "equations/SolidConcentration.hpp"
 
 void
-SolidConcentration::Update(const Coefficient & j)
+SolidConcentration::Update(const real_t & j)
 {
   MFEM_ASSERT(particle_region == NE || particle_region == PE, "Particle not in electrode!");
 
@@ -11,7 +11,7 @@ SolidConcentration::Update(const Coefficient & j)
 
   FunctionCoefficient r2([](const Vector & r) { return r(0) * r(0); });
   ProductCoefficient dr2(D / R / R, r2);
-  ProductCoefficient jjr2(const_cast<Coefficient &>(j), r2);
+  ProductCoefficient jjr2(j, r2);
   ProductCoefficient jr2(-1. / R / t_scale, jjr2);
 
   if (!M)

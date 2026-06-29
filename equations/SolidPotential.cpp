@@ -2,7 +2,7 @@
 #include "equations/SolidPotential.hpp"
 
 void
-SolidPotential::Update(const Coefficient & j)
+SolidPotential::Update()
 {
   // Source term.
   Vector source_vec({/* NE */ -AN /* length scaling */ * (LNE / NNE * NX),
@@ -10,7 +10,7 @@ SolidPotential::Update(const Coefficient & j)
                      /* PE */ -AP /* length scaling */ * (LPE / NPE * NX)});
 
   PWConstCoefficient source_part(source_vec);
-  ProductCoefficient source(source_part, const_cast<Coefficient &>(j));
+  ProductCoefficient source(source_part, j);
 
   // Effective conductivity (does not account for electrode filler).
   Vector sigma_vec({/* NE */ (1 - EPS_N) * SIGN /* length scaling */ / (LNE / NNE * NX),
