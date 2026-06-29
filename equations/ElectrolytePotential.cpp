@@ -21,11 +21,6 @@ ElectrolytePotential::Update()
   TransformedCoefficient kappa(&ec_gfc, Kappa);
   ProductCoefficient kappa_eff(b_part, kappa);
 
-  GradientGridFunctionCoefficient grad_ec(ec_gfc.GetGridFunction());
-  RatioCoefficient ec_inv(2 * T * (1 - TPLUS), ec_gfc);
-  ScalarVectorProductCoefficient grad_ln_ec(ec_inv, grad_ec);
-  ScalarVectorProductCoefficient grad_ln_ec_kappad(kappa_eff, grad_ln_ec);
-
   if (!K)
   {
     K = new ParBilinearForm(&fespace);
@@ -37,7 +32,7 @@ ElectrolytePotential::Update()
   if (!Qc)
   {
     Qc = new ParLinearForm(&fespace);
-    Qc->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+    Qc->AddDomainIntegrator(new DomainLFGradIntegrator(gl));
     Qc->Assemble();
     Qc->ParallelAssemble(bc);
   }
