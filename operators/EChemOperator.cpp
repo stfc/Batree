@@ -84,11 +84,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _ec_gf = CE0;
   _sc_gf = 0.;
 
-  ConstructExchangeCurrent();
-  ConstructOpenCircuitPotential();
-  ConstructOverPotential();
-  ConstructReactionCurrent();
-  ConstructElectrodeReactionCurrent();
+  ConstructCoefficients();
 
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
@@ -376,6 +372,38 @@ EChemOperator::GetParticleReactionCurrent()
   return j;
 }
 
+void
+EChemOperator::ConstructCoefficients()
+{
+  if (SPM)
+  {
+    _jex = new ExchangeCurrentCoefficient(
+        KN, KP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE), CE0);
+    _ocp = new OpenCircuitPotentialCoefficient(
+        UN, UP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE));
+    _op = new OverPotentialCoefficient(T, *_jex);
+    _j = new ReactionCurrentCoefficient();
+  }
+  else if (SPMe)
+  {
+    _jex = new ExchangeCurrentCoefficient(
+        KN, KP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE), _ec_gfc);
+    _ocp = new OpenCircuitPotentialCoefficient(
+        UN, UP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE));
+    _op = new OverPotentialCoefficient(T, *_jex);
+    _j = new ReactionCurrentCoefficient();
+  }
+  else if (P2D)
+  {
+    _jex = new ExchangeCurrentCoefficient(KN, KP, _sc_gfc, _ec_gfc);
+    _ocp = new OpenCircuitPotentialCoefficient(UN, UP, _sc_gfc);
+    _op = new OverPotentialCoefficient(
+        GetReferencePotential(E), GetReferencePotential(PE), _sp_gfc, _ep_gfc, *_ocp);
+    _j = new ReactionCurrentCoefficient(T, *_jex, *_op);
+    _je = new ElectrodeReactionCurrentCoefficient(*_jex, *_op);
+  }
+}
+
 //
 // Reaction Current
 //
@@ -389,26 +417,6 @@ EChemOperator::GetReactionCurrent(const Region & r)
               "Cannot get constant reaction current, only negative (NE) and positive electrodes "
               "(PE) are supported.");
   return _j->Eval()(r);
-}
-
-void
-EChemOperator::ConstructReactionCurrent()
-{
-  if (SPM || SPMe)
-    _j = new ReactionCurrentCoefficient();
-  else if (P2D)
-    _j = new ReactionCurrentCoefficient(T, *_jex, *_op);
-}
-
-//
-// Electrode Reaction Current
-//
-
-void
-EChemOperator::ConstructElectrodeReactionCurrent()
-{
-  if (P2D)
-    _je = new ElectrodeReactionCurrentCoefficient(*_jex, *_op);
 }
 
 //
@@ -426,19 +434,6 @@ EChemOperator::GetExchangeCurrent(const Region & r)
   return _jex->Eval()(r);
 }
 
-void
-EChemOperator::ConstructExchangeCurrent()
-{
-  if (SPM)
-    _jex = new ExchangeCurrentCoefficient(
-        KN, KP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE), CE0);
-  else if (SPMe)
-    _jex = new ExchangeCurrentCoefficient(
-        KN, KP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE), _ec_gfc);
-  else if (P2D)
-    _jex = new ExchangeCurrentCoefficient(KN, KP, _sc_gfc, _ec_gfc);
-}
-
 //
 // Open Circuit Potential
 //
@@ -454,16 +449,6 @@ EChemOperator::GetOpenCircuitPotential(const Region & r)
   return _ocp->Eval()(r);
 }
 
-void
-EChemOperator::ConstructOpenCircuitPotential()
-{
-  if (SPM || SPMe)
-    _ocp = new OpenCircuitPotentialCoefficient(
-        UN, UP, GetSurfaceConcentration(NE), GetSurfaceConcentration(PE));
-  else if (P2D)
-    _ocp = new OpenCircuitPotentialCoefficient(UN, UP, _sc_gfc);
-}
-
 //
 // OverPotential
 //
@@ -476,16 +461,6 @@ EChemOperator::GetOverPotential(const Region & r)
               "Cannot get constant overpotential, only negative (NE) and positive electrodes (PE) "
               "are supported.");
   return _op->Eval()(r);
-}
-
-void
-EChemOperator::ConstructOverPotential()
-{
-  if (SPM || SPMe)
-    _op = new OverPotentialCoefficient(T, *_jex);
-  else if (P2D)
-    _op = new OverPotentialCoefficient(
-        GetReferencePotential(E), GetReferencePotential(PE), _sp_gfc, _ep_gfc, *_ocp);
 }
 
 //

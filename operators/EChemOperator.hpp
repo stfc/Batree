@@ -120,10 +120,7 @@ public:
   Array<real_t> GetParticleReactionCurrent();
 
   /// Construct coefficients for derived quantities
-  void ConstructReactionCurrent();
-  void ConstructExchangeCurrent();
-  void ConstructOpenCircuitPotential();
-  void ConstructOverPotential();
+  void ConstructCoefficients();
 
   /// Helpers for quantities which are constant within a region
   const real_t & GetSurfaceConcentration(const Region & r);
