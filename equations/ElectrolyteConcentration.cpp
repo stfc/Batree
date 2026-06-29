@@ -9,8 +9,7 @@ ElectrolyteConcentration::Update(const GridFunctionCoefficient & ec_gfc, const C
                    /* SEP */ EPS_S /* length scaling */ * (LSEP / NSEP * NX),
                    /* PE */ EPS_P /* length scaling */ * (LPE / NPE * NX)});
   PWConstCoefficient mass_part(mass_vec);
-  ConstantCoefficient t_scale(te_scale);
-  ProductCoefficient mass(mass_part, t_scale);
+  ProductCoefficient mass(te_scale, mass_part);
 
   // Source term.
   Vector source_vec({/* NE */ (1 - TPLUS) * AN /* length scaling */ * (LNE / NNE * NX),

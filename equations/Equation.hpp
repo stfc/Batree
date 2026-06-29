@@ -24,7 +24,7 @@ protected:
 
   HypreSmoother prec; // Preconditioner for the implicit solver
 
-  mutable Vector b; // auxiliary vector
+  Vector b; // auxiliary vector
 
 public:
   Equation(ParFiniteElementSpace & f) : fespace(f), b(f.GetTrueVSize()) {};

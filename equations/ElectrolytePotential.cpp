@@ -26,19 +26,29 @@ ElectrolytePotential::Update(const GridFunctionCoefficient & ec_gfc, const Coeff
   ScalarVectorProductCoefficient grad_ln_ec(ec_inv, grad_ec);
   ScalarVectorProductCoefficient grad_ln_ec_kappad(kappa_eff, grad_ln_ec);
 
-  delete K;
-  K = new ParBilinearForm(&fespace);
-  K->AddDomainIntegrator(new DiffusionIntegrator(kappa_eff));
-  K->Assemble();
-  K->FormSystemMatrix(ess_tdof_list, Kmat);
+  if (!K)
+  {
+    K = new ParBilinearForm(&fespace);
+    K->AddDomainIntegrator(new DiffusionIntegrator(kappa_eff));
+    K->Assemble();
+    K->FormSystemMatrix(ess_tdof_list, Kmat);
+  }
+
+  if (!Qc)
+  {
+    Qc = new ParLinearForm(&fespace);
+    Qc->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+    Qc->Assemble();
+    Qc->ParallelAssemble(bc);
+  }
 
   if (!Q)
   {
     Q = new ParLinearForm(&fespace);
     Q->AddDomainIntegrator(new DomainLFIntegrator(source));
-    Q->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
   }
   Q->Assemble();
   Q->ParallelAssemble(b);
+  b += bc;
   b.SetSubVector(ess_tdof_list, 0.0);
 }

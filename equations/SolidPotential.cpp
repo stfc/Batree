@@ -5,9 +5,9 @@ void
 SolidPotential::Update(const Coefficient & j)
 {
   // Source term.
-  Vector source_vec({/* NE */ AN /* length scaling */ * (LNE / NNE * NX),
+  Vector source_vec({/* NE */ -AN /* length scaling */ * (LNE / NNE * NX),
                      /* SEP */ 0.,
-                     /* PE */ AP /* length scaling */ * (LPE / NPE * NX)});
+                     /* PE */ -AP /* length scaling */ * (LPE / NPE * NX)});
 
   PWConstCoefficient source_part(source_vec);
   ProductCoefficient source(source_part, const_cast<Coefficient &>(j));
@@ -35,5 +35,4 @@ SolidPotential::Update(const Coefficient & j)
   Q->Assemble();
   Q->ParallelAssemble(b);
   b.SetSubVector(ess_tdof_list, 0.0);
-  b.Neg();
 }

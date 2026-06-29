@@ -16,7 +16,7 @@ jobs:
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
       - name: Checkout batree
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Checkout, configure, build and install MFEM
         run: |
           git clone https://github.com/mfem/mfem.git
