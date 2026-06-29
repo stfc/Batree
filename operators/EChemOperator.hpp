@@ -45,6 +45,7 @@ protected:
 
   /// Coefficients for derived, i.e. not solved for, quantities
   ReactionCurrentCoefficient * _j;
+  ElectrodeReactionCurrentCoefficient * _je;
   ExchangeCurrentCoefficient * _jex;
   OpenCircuitPotentialCoefficient * _ocp;
   OverPotentialCoefficient * _op;
@@ -156,6 +157,7 @@ public:
       delete _sc[p];
 
     delete _j;
+    delete _je;
     delete _jex;
     delete _ocp;
     delete _op;

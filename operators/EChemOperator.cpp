@@ -84,6 +84,12 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _ec_gf = CE0;
   _sc_gf = 0.;
 
+  ConstructExchangeCurrent();
+  ConstructOpenCircuitPotential();
+  ConstructOverPotential();
+  ConstructReactionCurrent();
+  ConstructElectrodeReactionCurrent();
+
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
   {
@@ -116,11 +122,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
       _sc.Append(new SolidConcentration(*_r_h1space[p], p, rank, dof, region));
     }
   }
-
-  ConstructExchangeCurrent();
-  ConstructOpenCircuitPotential();
-  ConstructOverPotential();
-  ConstructReactionCurrent();
 
   if (P2D)
   {
@@ -318,9 +319,9 @@ EChemOperator::GetElectrodeReactionCurrent(const Region & r, const int & sign)
               "Cannot get partial electrode reaction current, only negative (NE) and positive "
               "electrodes (PE) are supported.");
 
-  ElectrodeReactionCurrentCoefficient j(r, sign, *_jex, *_op);
+  _je->SetRegionSign(r, sign);
   QuadratureSpace x_qspace(_x_h1space->GetParMesh(), 2 * _x_h1space->FEColl()->GetOrder());
-  return x_qspace.Integrate(j);
+  return x_qspace.Integrate(*_je);
 }
 
 //
@@ -397,6 +398,17 @@ EChemOperator::ConstructReactionCurrent()
     _j = new ReactionCurrentCoefficient();
   else if (P2D)
     _j = new ReactionCurrentCoefficient(T, *_jex, *_op);
+}
+
+//
+// Electrode Reaction Current
+//
+
+void
+EChemOperator::ConstructElectrodeReactionCurrent()
+{
+  if (P2D)
+    _je = new ElectrodeReactionCurrentCoefficient(*_jex, *_op);
 }
 
 //
