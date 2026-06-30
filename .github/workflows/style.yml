@@ -1,6 +1,6 @@
 name: Style Checks
 
-on: [push, pull_request, workflow_dispatch]
+on: [pull_request, workflow_dispatch]
 
 jobs:
   Whitespace:
@@ -21,4 +21,4 @@ jobs:
         uses: RafikFarhad/clang-format-github-action@v6.0.1
         with:
           style: file
-          excludes: docs/details.md
+          excludes: docs/*,validation/*

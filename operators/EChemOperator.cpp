@@ -10,33 +10,29 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   : TimeDependentOperator(ndofs, (real_t)0.0),
     _x_h1space(x_h1space),
     _r_h1space(r_h1space),
-    _Ac(NULL),
-    _Ap(NULL),
+    _ep_gf(_x_h1space),
+    _sp_gf(_x_h1space),
+    _ec_gf(_x_h1space),
+    _sc_gf(_x_h1space),
+    _ep_gfc(&_ep_gf),
+    _sp_gfc(&_sp_gf),
+    _ec_gfc(&_ec_gf),
+    _sc_gfc(&_sc_gf),
     _x(x),
     _t(t),
     _dt(dt),
     _ode_solver(ode_solver),
     _Solver(_x_h1space->GetComm())
 {
-  const real_t rel_tol = 1e-16;
-
-  _Solver.iterative_mode = false;
-  _Solver.SetRelTol(rel_tol);
-  _Solver.SetAbsTol(0.0);
+  _Solver.iterative_mode = true;
+  _Solver.SetRelTol(1e-11);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
-  //_Solver.SetPreconditioner(_Prec);
+  _Solver.SetPreconditioner(_Prec);
 
-  _block_offsets.SetSize(NMACRO + 1 + 1);
   _block_trueOffsets.SetSize(NEQS + 1);
   _potential_trueOffsets.SetSize(NMACROP + 1);
   _concentration_trueOffsets.SetSize(NMACROC + NPAR + 1);
-
-  _block_offsets[0] = 0;
-  _block_offsets[EP + 1] = _x_h1space->GetVSize();
-  _block_offsets[SP + 1] = _x_h1space->GetVSize();
-  _block_offsets[EC + 1] = _x_h1space->GetVSize();
-  _block_offsets[SC + 1] = _x_h1space->GetVSize();
 
   _block_trueOffsets[0] = 0;
   _block_trueOffsets[EP + 1] = _x_h1space->GetTrueVSize();
@@ -56,7 +52,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _concentration_trueOffsets[SCC + 1 + p] = _r_h1space[p]->GetTrueVSize();
   }
 
-  _block_offsets.PartialSum();
   _block_trueOffsets.PartialSum();
   _potential_trueOffsets.PartialSum();
   _concentration_trueOffsets.PartialSum();
@@ -67,31 +62,27 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     std::cout << "Unknowns (rank 0): " << _block_trueOffsets[NEQS] << std::endl;
   }
 
-  // Set offsets for full dof vector
-  _l.Update(_block_offsets);
-  _l = 0.;
-
-  // Initialise gridfunctions to use the appropriate section of the full dof vector _l
-  _ep_gf.MakeRef(_x_h1space, _l, _block_offsets[EP]);
-  _sp_gf.MakeRef(_x_h1space, _l, _block_offsets[SP]);
-  _ec_gf.MakeRef(_x_h1space, _l, _block_offsets[EC]);
-  _sc_gf.MakeRef(_x_h1space, _l, _block_offsets[SC]);
-
-  // Wrap gridfunctions in coefficients
-  _ep_gfc.SetGridFunction(&_ep_gf);
-  _sp_gfc.SetGridFunction(&_sp_gf);
-  _ec_gfc.SetGridFunction(&_ec_gf);
-  _sc_gfc.SetGridFunction(&_sc_gf);
-
-  // Set offsets for solution and rhs (potential and concentration) true vectors
+  // Set offsets for solution (complete, potential and concentration) true vectors
   _x.Update(_block_trueOffsets);
+  _xp.Update(_x, _potential_trueOffsets);
+  _xc.~BlockVector();
+  new (&_xc) BlockVector(_x, _block_trueOffsets[C], _concentration_trueOffsets);
+
+  // Set offsets for rhs (potential and concentration) true vectors
   _bp.Update(_potential_trueOffsets);
   _bc.Update(_concentration_trueOffsets);
 
-  // Set initial conditions (for electrolyte concentration)
+  // Initialise 2D arrays of pointers for each block in the system matrices
+  _Bp = nullptr;
+  _Bc = nullptr;
+
+  // Set initial conditions (in particular for electrolyte concentration)
   _x = 0.;
   _x.GetBlock(EC) = CE0;
-  _ec_gf.SetFromTrueDofs(_x.GetBlock(EC));
+  _ep_gf = 0.;
+  _sp_gf = 0.;
+  _ec_gf = CE0;
+  _sc_gf = 0.;
 
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
@@ -145,76 +136,68 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
 }
 
 void
-EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & dx_dt)
+EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 {
   // Solve the equation:
-  //   M dx_dt = -K(x + dt*dx_dt) <=> (M + dt K) dx_dt = -Kx
-  // for dx_dt, where K is linearized by using x from the previous timestep
-
-  // Logically split dx_dt in two parts: potentials and concentrations
-  Array<int> offsets({_block_trueOffsets[P], _block_trueOffsets[C], _block_trueOffsets[NEQS]});
-  BlockVector dx_dt_blocked(dx_dt, offsets);
-  Vector & dxp_dt(dx_dt_blocked.GetBlock(0));
-  Vector & dxc_dt(dx_dt_blocked.GetBlock(1));
+  //   M x(t + dt) / dt = - K x(t + dt) + M x(t) / dt + b <=>
+  //   (M / dt + K) x(t + dt) = M x(t) / dt + b
+  // for k := x(t + dt), where K is linearized by using x from the previous timestep
 
   if (P2D)
   {
-    dx_dt = 0.;
-
     ParGridFunction j_gf(_x_l2space);
     ConstantCoefficient zero(0.);
+    _ep->Reset();
 
     do
     {
       // save previous iteration reaction current
       j_gf.ProjectCoefficient(*_j);
 
-      // restore solution true dof vector; this is paramount to guarantee we
-      // use the old timestep in the rhs (which appears as a consequence of
-      // our rate formulation); note, however, that any coefficients
-      // dependent on the potentials should use the gridfunctions set below,
-      // which are on the new timestep, just like _j, NOT any gridfunctions
-      // obtained afresh from true vector _x which is now on the old timestep
-      _x.Add(-_dt, dx_dt);
-
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
 
       // put _Ap and _bp together
-      _Ap->SetDiagonalBlock(EPP, new HypreParMatrix(_ep->GetK()), dt);
-      _Ap->SetDiagonalBlock(SPP, new HypreParMatrix(_sp->GetK()), dt);
+      _Bp(EPP, EPP) = &_ep->GetK();
+      _Bp(SPP, SPP) = &_sp->GetK();
+      delete _Ap;
+      _Ap = mfem::HypreParMatrixFromBlocks(_Bp);
       _bp.GetBlock(EPP) = _ep->GetZ();
       _bp.GetBlock(SPP) = _sp->GetZ();
 
-      // solve for dxp_dt (potentials rate)
+      // solve for xp(t + dt)
       _Solver.SetOperator(*_Ap);
-      _Solver.Mult(_bp, dxp_dt);
+      _Solver.Mult(_bp, _xp);
 
-      // temporarily advance solution true dof vector to set gridfunctions
-      _x.Add(_dt, dx_dt);
       SetGridFunctionsFromTrueVectors();
     } while (j_gf.ComputeL2Error(*_j, _scl_irs) >
              _scl_threshold * j_gf.ComputeL2Error(zero, _scl_irs));
-
-    // restore solution true dof vector
-    _x.Add(-_dt, dx_dt);
   }
 
   // assemble each individual block of _Ac and _bc
   UpdateConcentrationEquations();
 
   // put _Ac and _bc together
-  _Ac->SetDiagonalBlock(ECC, Add(1, _ec->GetM(), dt, _ec->GetK()));
+  delete _Bc(ECC, ECC);
+  _Bc(ECC, ECC) = Add(1. / dt, _ec->GetM(), 1, _ec->GetK());
   _bc.GetBlock(ECC) = _ec->GetZ();
+  _ec->GetM().AddMult(_xc.GetBlock(ECC), _bc.GetBlock(ECC), 1. / dt);
   for (unsigned p = 0; p < NPAR; p++)
   {
-    _Ac->SetDiagonalBlock(SCC + p, Add(1, _sc[p]->GetM(), dt, _sc[p]->GetK()));
+    delete _Bc(SCC + p, SCC + p);
+    _Bc(SCC + p, SCC + p) = Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK());
     _bc.GetBlock(SCC + p) = _sc[p]->GetZ();
+    _sc[p]->GetM().AddMult(_xc.GetBlock(SCC + p), _bc.GetBlock(SCC + p), 1. / dt);
   }
+  delete _Ac;
+  _Ac = mfem::HypreParMatrixFromBlocks(_Bc);
 
-  // solve for dxc_dt (concentrations rate)
+  // solve for xc(t + dt)
   _Solver.SetOperator(*_Ac);
-  _Solver.Mult(_bc, dxc_dt);
+  _Solver.Mult(_bc, _xc);
+
+  // k is the solution at t + dt, which we already have in _x
+  k.MakeRef(_x, 0);
 }
 
 void
@@ -237,27 +220,17 @@ EChemOperator::SetGridFunctionsFromTrueVectors()
 void
 EChemOperator::UpdatePotentialEquations()
 {
-  // Rebuild _Ap, destroys owned (i.e. all) blocks
-  delete _Ap;
-  _Ap = new BlockOperator(_potential_trueOffsets);
-  _Ap->owns_blocks = 1;
-
-  _ep->Update(_x, _ec_gfc, *_j);
-  _sp->Update(_x, *_j);
+  _ep->Update(_ec_gfc, *_j);
+  _sp->Update(*_j);
 }
 
 void
 EChemOperator::UpdateConcentrationEquations()
 {
-  // Rebuild _Ac, destroys owned (i.e. all) blocks
-  delete _Ac;
-  _Ac = new BlockOperator(_concentration_trueOffsets);
-  _Ac->owns_blocks = 1;
-
-  _ec->Update(_x, _ec_gfc, *_j);
+  _ec->Update(_ec_gfc, *_j);
   const Array<real_t> & j = GetParticleReactionCurrent();
   for (unsigned p = 0; p < NPAR; p++)
-    _sc[p]->Update(_x, ConstantCoefficient(j[p]));
+    _sc[p]->Update(ConstantCoefficient(j[p]));
 }
 
 //
@@ -345,13 +318,9 @@ EChemOperator::GetElectrodeReactionCurrent(const Region & r, const int & sign)
               "Cannot get partial electrode reaction current, only negative (NE) and positive "
               "electrodes (PE) are supported.");
 
-  Vector amask({r == NE ? AN * LNE / NNE * NX : 0., 0., r == PE ? AP * LPE / NPE * NX : 0.});
-  PWConstCoefficient a(amask);
-  ProductCoefficient ajex(a, *_jex);
-  TransformedCoefficient I(
-      &ajex, _op, [=](real_t ajex, real_t op) { return ajex * exp(sign * 0.5 * op); });
+  ElectrodeReactionCurrentCoefficient j(r, sign, *_jex, *_op);
   QuadratureSpace x_qspace(_x_h1space->GetParMesh(), 2 * _x_h1space->FEColl()->GetOrder());
-  return x_qspace.Integrate(I);
+  return x_qspace.Integrate(j);
 }
 
 //
@@ -370,26 +339,16 @@ EChemOperator::GetParticleReactionCurrent()
   {
     ParGridFunction j_gf(_x_h1space);
 
-    { // Despicable trick to project discontinuous current onto H1
-      Array<int> electrode_particle_dofs;
-      Array<int> mutated_elements;
-      for (unsigned p = 0; p < NPAR; p++)
-        if (_sc[p]->IsParticleOwned())
-        {
-          int dof = _sc[p]->GetParticleDof();
-          int elem = _x_h1space->GetElementForDof(dof);
-          electrode_particle_dofs.Append(dof);
-          if (_x_h1space->GetAttribute(elem) == SEP)
-          {
-            mutated_elements.Append(elem);
-            _x_h1space->GetParMesh()->SetAttribute(elem, _sc[p]->GetParticleRegion());
-          }
-        }
+    { // ProjectDiscCoefficient uses the element w/ maximal attribute for shared dofs
+      for (int elem = 0; elem < _x_h1space->GetParMesh()->GetNE(); elem++)
+        if (_x_h1space->GetAttribute(elem) == SEP)
+          _x_h1space->GetParMesh()->SetAttribute(elem, 0);
 
-      j_gf.ProjectCoefficient(*_j, electrode_particle_dofs);
+      j_gf.ProjectDiscCoefficient(*_j);
 
-      for (auto & elem : mutated_elements)
-        _x_h1space->GetParMesh()->SetAttribute(elem, SEP);
+      for (int elem = 0; elem < _x_h1space->GetParMesh()->GetNE(); elem++)
+        if (_x_h1space->GetAttribute(elem) == 0)
+          _x_h1space->GetParMesh()->SetAttribute(elem, SEP);
     }
 
     for (unsigned p = 0; p < NPAR; p++)
@@ -542,7 +501,7 @@ real_t
 EChemOperator::GetVoltageMarquisCorrection()
 {
   PWCoefficient ce_pwc;
-  QuadratureSpace x_qspace(_x_h1space->GetParMesh(), 2 * _x_h1space->FEColl()->GetOrder());
+  QuadratureSpace x_qspace(_x_h1space->GetParMesh(), _x_h1space->FEColl()->GetOrder());
 
   ce_pwc.UpdateCoefficient(NE, _ec_gfc);
   real_t ce_ne_int = x_qspace.Integrate(ce_pwc) * (NX / NNE);

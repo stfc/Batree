@@ -2,17 +2,14 @@
 #include "equations/ElectrolyteConcentration.hpp"
 
 void
-ElectrolyteConcentration::Update(const BlockVector & x,
-                                 const GridFunctionCoefficient & ec_gfc,
-                                 const Coefficient & j)
+ElectrolyteConcentration::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
 {
   // Mass coefficient.
   Vector mass_vec({/* NE */ EPS_N /* length scaling */ * (LNE / NNE * NX),
                    /* SEP */ EPS_S /* length scaling */ * (LSEP / NSEP * NX),
                    /* PE */ EPS_P /* length scaling */ * (LPE / NPE * NX)});
   PWConstCoefficient mass_part(mass_vec);
-  ConstantCoefficient t_scale(te_scale);
-  ProductCoefficient mass(mass_part, t_scale);
+  ProductCoefficient mass(te_scale, mass_part);
 
   // Source term.
   Vector source_vec({/* NE */ (1 - TPLUS) * AN /* length scaling */ * (LNE / NNE * NX),
@@ -31,11 +28,13 @@ ElectrolyteConcentration::Update(const BlockVector & x,
   PWConstCoefficient D_scale_coeff(D_scale_vec);
   ProductCoefficient D(D_scale_coeff, D_coeff);
 
-  delete M;
-  M = new ParBilinearForm(&fespace);
-  M->AddDomainIntegrator(new MassIntegrator(mass));
-  M->Assemble(0); // keep sparsity pattern of M and K the same
-  M->FormSystemMatrix(ess_tdof_list, Mmat);
+  if (!M)
+  {
+    M = new ParBilinearForm(&fespace);
+    M->AddDomainIntegrator(new MassIntegrator(mass));
+    M->Assemble(0); // keep sparsity pattern of M and K the same
+    M->FormSystemMatrix(ess_tdof_list, Mmat);
+  }
 
   delete K;
   K = new ParBilinearForm(&fespace);
@@ -43,15 +42,11 @@ ElectrolyteConcentration::Update(const BlockVector & x,
   K->Assemble(0); // keep sparsity pattern of M and K the same
   K->FormSystemMatrix(ess_tdof_list, Kmat);
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  }
   Q->Assemble();
-
-  delete Qvec;
-  Qvec = Q->ParallelAssemble();
-
-  Kmat.Mult(x.GetBlock(EC), b);
-  b.Neg();
-  b += *Qvec;
+  Q->ParallelAssemble(b);
 }

@@ -1,7 +1,7 @@
 #include "equations/SolidConcentration.hpp"
 
 void
-SolidConcentration::Update(const BlockVector & x, const Coefficient & j)
+SolidConcentration::Update(const Coefficient & j)
 {
   MFEM_ASSERT(particle_region == NE || particle_region == PE, "Particle not in electrode!");
 
@@ -14,30 +14,30 @@ SolidConcentration::Update(const BlockVector & x, const Coefficient & j)
   ProductCoefficient jjr2(const_cast<Coefficient &>(j), r2);
   ProductCoefficient jr2(-1. / R / t_scale, jjr2);
 
-  delete M;
-  M = new ParBilinearForm(&fespace);
-  M->AddDomainIntegrator(new MassIntegrator(r2));
-  M->Assemble(0); // keep sparsity pattern of M and K the same
-  M->FormSystemMatrix(ess_tdof_list, Mmat);
+  if (!M)
+  {
+    M = new ParBilinearForm(&fespace);
+    M->AddDomainIntegrator(new MassIntegrator(r2));
+    M->Assemble(0); // keep sparsity pattern of M and K the same
+    M->FormSystemMatrix(ess_tdof_list, Mmat);
+  }
 
-  delete K;
-  K = new ParBilinearForm(&fespace);
-  K->AddDomainIntegrator(new DiffusionIntegrator(dr2));
-  K->Assemble(0); // keep sparsity pattern of M and K the same
-  K->FormSystemMatrix(ess_tdof_list, Kmat);
+  if (!K) // revisit if nonlinear
+  {
+    K = new ParBilinearForm(&fespace);
+    K->AddDomainIntegrator(new DiffusionIntegrator(dr2));
+    K->Assemble(0); // keep sparsity pattern of M and K the same
+    K->FormSystemMatrix(ess_tdof_list, Kmat);
+  }
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddBoundaryIntegrator(new BoundaryLFIntegrator(jr2),
-                           const_cast<mfem::Array<int> &>(surface_bdr));
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddBoundaryIntegrator(new BoundaryLFIntegrator(jr2),
+                             const_cast<mfem::Array<int> &>(surface_bdr));
+  }
   Q->Assemble();
-
-  delete Qvec;
-  Qvec = Q->ParallelAssemble();
-
-  Kmat.Mult(x.GetBlock(SC + particle_id), b);
-  b.Neg();
-  b += *Qvec;
+  Q->ParallelAssemble(b);
 }
 
 real_t

@@ -2,9 +2,7 @@
 #include "equations/ElectrolytePotential.hpp"
 
 void
-ElectrolytePotential::Update(const BlockVector & x,
-                             const GridFunctionCoefficient & ec_gfc,
-                             const Coefficient & j)
+ElectrolytePotential::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
 {
   // Source term.
   Vector source_vec({/* NE */ AN /* length scaling */ * (LNE / NNE * NX),
@@ -24,28 +22,33 @@ ElectrolytePotential::Update(const BlockVector & x,
   ProductCoefficient kappa_eff(b_part, kappa);
 
   GradientGridFunctionCoefficient grad_ec(ec_gfc.GetGridFunction());
-  RatioCoefficient ec_inv(1., const_cast<GridFunctionCoefficient &>(ec_gfc));
+  RatioCoefficient ec_inv(2 * T * (1 - TPLUS), const_cast<GridFunctionCoefficient &>(ec_gfc));
   ScalarVectorProductCoefficient grad_ln_ec(ec_inv, grad_ec);
-  ScalarVectorProductCoefficient prod_part(kappa_eff, grad_ln_ec);
-  ScalarVectorProductCoefficient grad_ln_ec_kappad(2 * T * (1 - TPLUS), prod_part);
+  ScalarVectorProductCoefficient grad_ln_ec_kappad(kappa_eff, grad_ln_ec);
 
-  delete K;
-  K = new ParBilinearForm(&fespace);
-  K->AddDomainIntegrator(new DiffusionIntegrator(kappa_eff));
-  K->Assemble();
-  K->FormSystemMatrix(ess_tdof_list, Kmat);
+  if (!K)
+  {
+    K = new ParBilinearForm(&fespace);
+    K->AddDomainIntegrator(new DiffusionIntegrator(kappa_eff));
+    K->Assemble();
+    K->FormSystemMatrix(ess_tdof_list, Kmat);
+  }
 
-  delete Q;
-  Q = new ParLinearForm(&fespace);
-  Q->AddDomainIntegrator(new DomainLFIntegrator(source));
-  Q->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+  if (!Qc)
+  {
+    Qc = new ParLinearForm(&fespace);
+    Qc->AddDomainIntegrator(new DomainLFGradIntegrator(grad_ln_ec_kappad));
+    Qc->Assemble();
+    Qc->ParallelAssemble(bc);
+  }
+
+  if (!Q)
+  {
+    Q = new ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new DomainLFIntegrator(source));
+  }
   Q->Assemble();
-
-  delete Qvec;
-  Qvec = Q->ParallelAssemble();
-  Qvec->SetSubVector(ess_tdof_list, 0.0);
-
-  Kmat.Mult(x.GetBlock(EP), b);
-  b.Neg();
-  b += *Qvec;
+  Q->ParallelAssemble(b);
+  b += bc;
+  b.SetSubVector(ess_tdof_list, 0.0);
 }

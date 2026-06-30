@@ -9,6 +9,7 @@
 #include "coefficients/OpenCircuitPotentialCoefficient.hpp"
 #include "coefficients/OverPotentialCoefficient.hpp"
 #include "coefficients/ReactionCurrentCoefficient.hpp"
+#include "coefficients/ElectrodeReactionCurrentCoefficient.hpp"
 
 using namespace mfem;
 
@@ -48,8 +49,6 @@ protected:
   OpenCircuitPotentialCoefficient * _ocp;
   OverPotentialCoefficient * _op;
 
-  /// For the four gridfunctions over _x_h1space (3 macro eqs plus _surface_ concentration)
-  Array<int> _block_offsets;
   /// For solution true vector (3 macros eqs plus NPAR _radial_ concentrations)
   Array<int> _block_trueOffsets;
   /// For rhs true vectors (2 macro eqs)
@@ -58,13 +57,16 @@ protected:
   Array<int> _concentration_trueOffsets;
 
   /// System matrices for concentration and potential eqs
-  BlockOperator *_Ac, *_Ap;
+  HypreParMatrix *_Ac = nullptr, *_Ap = nullptr;
 
-  /// Block vector for the dofs of quantities defined over _x_h1space (3 macro eqs plus _surface_ concentration)
-  BlockVector _l;
+  /// 2D array of pointers for each block in the system matrices
+  Array2D<const HypreParMatrix *> _Bc{int(NPAR) + 1, int(NPAR) + 1}, _Bp{2, 2};
 
   /// Reference to solution true dof vector
   BlockVector & _x;
+
+  /// Block vectors wrapping the concentration and potential solution true dof vectors
+  BlockVector _xc, _xp;
 
   /// Reference to current time
   real_t & _t;
@@ -81,7 +83,7 @@ protected:
   HypreSmoother _Prec;
 
   /// Auxiliary rhs vectors for concentrations and potential eqs
-  mutable BlockVector _bc, _bp;
+  BlockVector _bc, _bp;
 
   /// Self-consistency loop "L2" error threshold
   const real_t _scl_threshold = 1e-9;

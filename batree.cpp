@@ -149,6 +149,7 @@ main(int argc, char * argv[])
 
   // Perform time-integration (looping over the time iterations, ti, with a
   // time-step dt).
+  oper.SetImplicitVariableType(TimeDependentOperator::STATE);
   ode_solver->Init(oper);
 
   bool last_step = false;

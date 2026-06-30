@@ -21,11 +21,10 @@ protected:
 
   HypreParMatrix Mmat;
   HypreParMatrix Kmat;
-  HypreParVector * Qvec = nullptr;
 
   HypreSmoother prec; // Preconditioner for the implicit solver
 
-  mutable Vector b; // auxiliary vector
+  Vector b; // auxiliary vector
 
 public:
   Equation(ParFiniteElementSpace & f) : fespace(f), b(f.GetTrueVSize()) {};
@@ -34,16 +33,13 @@ public:
   const HypreParMatrix & GetK() const { return Kmat; };
   const Vector & GetZ() const { return b; };
 
-  /// Update the diffusion BilinearForm K using the given true-dof vector `x`.
-  virtual void Update(const BlockVector & x, const Coefficient & j) = 0;
-  virtual void
-  Update(const BlockVector & x, const GridFunctionCoefficient & u, const Coefficient & j) = 0;
+  virtual void Update(const Coefficient & j) {}
+  virtual void Update(const GridFunctionCoefficient & u, const Coefficient & j) {}
 
   virtual ~Equation()
   {
     delete M;
     delete K;
     delete Q;
-    delete Qvec;
   }
 };
