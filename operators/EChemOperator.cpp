@@ -130,7 +130,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
 
     // Build special integration rule to be used only for self-consistency loop
     for (int i = 0; i < _scl_ir.GetNPoints(); i++)
-      _scl_ir.IntPoint(i).weight = 1.;
+      _scl_ir.IntPoint(i).weight = NX;
     _scl_irs[Geometry::Type::SEGMENT] = &_scl_ir;
   }
 }
