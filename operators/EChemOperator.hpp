@@ -85,8 +85,8 @@ protected:
   /// Auxiliary rhs vectors for concentrations and potential eqs
   BlockVector _bc, _bp;
 
-  /// Self-consistency loop "L2" error threshold
-  const real_t _scl_threshold = 1e-9;
+  /// Self-consistency loop "L2" error threshold (JuBat uses 1e-9)
+  const real_t _scl_threshold = 1e-7;
 
   /// Self-consistency loop 4-point integration rule
   IntegrationRule _scl_ir = IntegrationRules().Get(Geometry::Type::SEGMENT, 7);
