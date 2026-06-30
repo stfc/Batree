@@ -146,13 +146,18 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   if (P2D)
   {
     ParGridFunction j_gf(_x_l2space);
-    ConstantCoefficient zero(0.);
+    real_t j_norm;
     _ep->Reset();
 
     do
     {
-      // save previous iteration reaction current
+      // save previous iteration reaction current and its l2 norm
       j_gf.ProjectCoefficient(*_j);
+      j_norm = j_gf.Norml2();
+      // get the global l2 norm if in parallel
+      j_norm *= j_norm;
+      MPI_Allreduce(MPI_IN_PLACE, &j_norm, 1, MFEM_MPI_REAL_T, MPI_SUM, MPI_COMM_WORLD);
+      j_norm = sqrt(j_norm);
 
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
@@ -170,8 +175,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
       _Solver.Mult(_bp, _xp);
 
       SetGridFunctionsFromTrueVectors();
-    } while (j_gf.ComputeL2Error(*_j, _scl_irs) >
-             _scl_threshold * j_gf.ComputeL2Error(zero, _scl_irs));
+    } while (j_gf.ComputeL2Error(*_j, _scl_irs) > _scl_threshold * j_norm);
   }
 
   // assemble each individual block of _Ac and _bc
