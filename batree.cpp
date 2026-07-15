@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include "operators/EChemOperator.hpp"
+#include "operators/CurrentCollectorOperator.hpp"
 
 using namespace mfem;
 
@@ -104,6 +105,29 @@ main(int argc, char * argv[])
   // time-step dt).
   oper.SetImplicitVariableType(TimeDependentOperator::STATE);
   ode_solver->Init(oper);
+
+  Mesh current_collector_mesh("/home/HCHPSE01/nxn02/kxc07-nxn02/Batree/mesh/rectangle_current_collector.msh", 1, 0);
+  ParMesh * c_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_mesh);
+
+  ParFiniteElementSpace * collector_h1space;
+  collector_h1space = new ParFiniteElementSpace(c_pmesh, &fe_coll);
+
+  Array<int> ess_tdof_list;
+
+   if (c_pmesh->bdr_attributes.Size())
+   {
+      Array<int> ess_bdr(c_pmesh->bdr_attributes.Max());
+      ess_bdr = 0;
+      // Apply boundary conditions on all external boundaries:
+      c_pmesh->MarkExternalBoundaries(ess_bdr);
+      // Boundary conditions can also be applied based on named attributes:
+      // mesh.MarkNamedBoundaries(set_name, ess_bdr)
+
+      collector_h1space->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
+   }
+
+  mfem::BlockVector y;
+  CurrentCollectorOperator current_oper(collector_h1space, y, ess_tdof_list);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
