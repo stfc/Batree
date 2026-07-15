@@ -1,25 +1,31 @@
-#include "CurrentOperator.hpp"
+#include "mfem.hpp"
 
-CurrentCollectorOperator::CurrentOperator(ParFiniteElementSpace &f, const Vector &u, const Array<int> &etl)
-   : Operator(f.GetTrueVSize()), fespace(f),
-     ess_tdof_list(etl), T(NULL), T_solver(f.GetComm())
+using namespace std;
+using namespace mfem;
+
+#pragma once
+
+class CurrentCollectorOperator : public Operator
 {
-   const real_t rel_tol = 1e-8;
+protected:
+   ParFiniteElementSpace &fespace;
+   Array<int> ess_tdof_list; // this list remains empty for pure Neumann b.c.
 
-   T_solver.iterative_mode = false;
-   T_solver.SetRelTol(rel_tol);
-   T_solver.SetAbsTol(0.0);
-   T_solver.SetMaxIter(100);
-   T_solver.SetPrintLevel(0);
-   T_solver.SetPreconditioner(T_prec);
-}
+   HypreParMatrix *T; // T = M + dt K
+   real_t current_dt;
 
-void CurrentCollectorOperator::Mult(const Vector &x, Vector &y)
-{
+   CGSolver M_solver;    // Krylov solver for inverting the mass matrix M
+   HypreSmoother M_prec; // Preconditioner for the mass matrix M
 
-}
+   CGSolver T_solver;    // Implicit solver for T = M + dt K
+   HypreSmoother T_prec; // Preconditioner for the implicit solver
 
-CurrentCollectorOperator::~CurrentOperator()
-{
-   delete T;
-}
+   mutable Vector b; // auxiliary vector
+
+public:
+   CurrentCollectorOperator(ParFiniteElementSpace &f, const Vector &u, const Array<int> &etl);
+
+   virtual void Mult(const Vector & x, Vector &y) const;
+
+   virtual ~CurrentCollectorOperator();
+};
