@@ -23,7 +23,7 @@ protected:
    mutable Vector b; // auxiliary vector
 
 public:
-   CurrentCollectorOperator(ParFiniteElementSpace &f, const Vector &u, const Array<int> &etl);
+   CurrentCollectorOperator(ParFiniteElementSpace * &f, BlockVector & x, const Array<int> &etl);
 
    virtual void Mult(const Vector & x, Vector &y) const;
 
