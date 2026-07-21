@@ -139,7 +139,12 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   {
     ParGridFunction j_gf(_x_l2space);
     real_t j_norm;
+
+    // force re-assembly of electrolyte potential lhs and rhs
     _ep->Reset();
+
+    // for performance only, since we get a better initial guess, no impact on final result
+    SetReferencePotential();
 
     do
     {
