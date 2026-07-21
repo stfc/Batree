@@ -95,7 +95,8 @@ public:
       This is the only requirement for high-order SDIRK implicit integration.*/
   virtual void ImplicitSolve(const real_t dt, const Vector & x, Vector & k) override;
 
-  void SetGridFunctionsFromTrueVectors();
+  void SetPotentialGridFunctionsFromTrueVectors();
+  void SetConcentrationGridFunctionsFromTrueVectors();
   void SetSurfaceConcentration();
   void SetReferencePotential();
 

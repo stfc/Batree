@@ -70,14 +70,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _Bp = nullptr;
   _Bc = nullptr;
 
-  // Set initial conditions (in particular for electrolyte concentration)
-  _x = 0.;
-  _x.GetBlock(EC) = CE0;
-  _ep_gf = 0.;
-  _sp_gf = 0.;
-  _ec_gf = CE0;
-  _sc_gf = 0.;
-
   // Construct equation ojects, first the 3 macro equations, then the NPAR micro eqs
   if (P2D)
   {
@@ -116,6 +108,12 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   ConstructOverPotential();
   ConstructReactionCurrent();
 
+  // Set initial conditions
+  _x = 0.;
+  _x.GetBlock(EC) = CE0;
+  SetConcentrationGridFunctionsFromTrueVectors();
+  SetPotentialGridFunctionsFromTrueVectors();
+
   if (P2D)
   {
     // Construct space for discontinuous functions like the reaction current j
@@ -141,7 +139,12 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   {
     ParGridFunction j_gf(_x_l2space);
     real_t j_norm;
+
+    // force re-assembly of electrolyte potential lhs and rhs
     _ep->Reset();
+
+    // for performance only, since we get a better initial guess, no impact on final result
+    SetReferencePotential();
 
     do
     {
@@ -168,7 +171,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
       _Solver.SetOperator(*_Ap);
       _Solver.Mult(_bp, _xp);
 
-      SetGridFunctionsFromTrueVectors();
+      SetPotentialGridFunctionsFromTrueVectors();
     } while (j_gf.ComputeL2Error(*_j, _scl_irs) > _scl_threshold * j_norm);
   }
 
@@ -194,20 +197,25 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   _Solver.SetOperator(*_Ac);
   _Solver.Mult(_bc, _xc);
 
+  SetConcentrationGridFunctionsFromTrueVectors();
+
   // k is the solution at t + dt, which we already have in _x
   k.MakeRef(_x, 0);
-
-  SetGridFunctionsFromTrueVectors();
 }
 
 void
-EChemOperator::SetGridFunctionsFromTrueVectors()
+EChemOperator::SetPotentialGridFunctionsFromTrueVectors()
 {
   _ep_gf.SetFromTrueDofs(_x.GetBlock(EP));
   _sp_gf.SetFromTrueDofs(_x.GetBlock(SP));
+  SetReferencePotential();
+}
+
+void
+EChemOperator::SetConcentrationGridFunctionsFromTrueVectors()
+{
   _ec_gf.SetFromTrueDofs(_x.GetBlock(EC));
   SetSurfaceConcentration();
-  SetReferencePotential();
 }
 
 void
