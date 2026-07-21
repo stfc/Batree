@@ -68,15 +68,6 @@ protected:
   /// Block vectors wrapping the concentration and potential solution true dof vectors
   BlockVector _xc, _xp;
 
-  /// Reference to current time
-  real_t & _t;
-
-  /// Reference to current timestep
-  real_t & _dt;
-
-  /// Reference to the ODE solver we use to integrate in time
-  ODESolver & _ode_solver;
-
   /// Implicit solver for T = M + dt K
   CGSolver _Solver;
   /// Preconditioner for the implicit solver
@@ -96,10 +87,7 @@ public:
   EChemOperator(ParFiniteElementSpace *& x_h1space,
                 Array<ParFiniteElementSpace *> & r_h1space,
                 const unsigned & ndofs,
-                BlockVector & x,
-                real_t & t,
-                real_t & dt,
-                ODESolver & ode_solver);
+                BlockVector & x);
 
   virtual void Mult(const Vector & x, Vector & dx_dt) const override {};
 
@@ -107,7 +95,6 @@ public:
       This is the only requirement for high-order SDIRK implicit integration.*/
   virtual void ImplicitSolve(const real_t dt, const Vector & x, Vector & k) override;
 
-  void Step();
   void SetGridFunctionsFromTrueVectors();
   void SetSurfaceConcentration();
   void SetReferencePotential();

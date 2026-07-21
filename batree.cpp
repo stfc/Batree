@@ -145,7 +145,7 @@ main(int argc, char * argv[])
   // Initialize the ElectroChemistry operator.
   real_t t = 0.0;
   BlockVector x;
-  EChemOperator oper(x_h1space, r_h1space, fe_size_owned, x, t, dt, *ode_solver);
+  EChemOperator oper(x_h1space, r_h1space, fe_size_owned, x);
 
   // Perform time-integration (looping over the time iterations, ti, with a
   // time-step dt).
@@ -157,7 +157,7 @@ main(int argc, char * argv[])
   {
     last_step = t + dt >= t_final - dt / 2;
 
-    oper.Step();
+    ode_solver->Step(x, t, dt);
     real_t V = oper.GetVoltage();
     // TODO: Stop sim at cutoff voltage
 

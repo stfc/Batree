@@ -3,10 +3,7 @@
 EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
                              Array<ParFiniteElementSpace *> & r_h1space,
                              const unsigned & ndofs,
-                             BlockVector & x,
-                             real_t & t,
-                             real_t & dt,
-                             ODESolver & ode_solver)
+                             BlockVector & x)
   : TimeDependentOperator(ndofs, (real_t)0.0),
     _x_h1space(x_h1space),
     _r_h1space(r_h1space),
@@ -19,9 +16,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _ec_gfc(&_ec_gf),
     _sc_gfc(&_sc_gf),
     _x(x),
-    _t(t),
-    _dt(dt),
-    _ode_solver(ode_solver),
     _Solver(_x_h1space->GetComm())
 {
   _Solver.iterative_mode = true;
@@ -202,12 +196,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 
   // k is the solution at t + dt, which we already have in _x
   k.MakeRef(_x, 0);
-}
 
-void
-EChemOperator::Step()
-{
-  _ode_solver.Step(_x, _t, _dt);
   SetGridFunctionsFromTrueVectors();
 }
 
