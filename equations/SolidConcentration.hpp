@@ -37,7 +37,7 @@ public:
   {
   }
 
-  virtual void Update(const Coefficient & j) override;
+  virtual void Update(const real_t & j);
   real_t SurfaceConcentration(const BlockVector & x);
   int GetParticleRank() { return particle_rank; }
   int GetSurfaceRank() { return surface_rank; }

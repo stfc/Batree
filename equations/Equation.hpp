@@ -31,9 +31,6 @@ public:
   const HypreParMatrix & GetK() const { return Kmat; };
   const Vector & GetZ() const { return b; };
 
-  virtual void Update(const Coefficient & j) {}
-  virtual void Update(const GridFunctionCoefficient & u, const Coefficient & j) {}
-
   virtual ~Equation()
   {
     delete M;

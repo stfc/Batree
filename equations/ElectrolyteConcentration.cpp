@@ -2,7 +2,7 @@
 #include "equations/ElectrolyteConcentration.hpp"
 
 void
-ElectrolyteConcentration::Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j)
+ElectrolyteConcentration::Update()
 {
   // Mass coefficient.
   Vector mass_vec({/* NE */ EPS_N /* length scaling */ * (LNE / NNE * NX),
@@ -17,14 +17,14 @@ ElectrolyteConcentration::Update(const GridFunctionCoefficient & ec_gfc, const C
                      /* PE */ (1 - TPLUS) * AP /* length scaling */ * (LPE / NPE * NX)});
 
   PWConstCoefficient source_part(source_vec);
-  ProductCoefficient source(source_part, const_cast<Coefficient &>(j));
+  ProductCoefficient source(source_part, j);
 
   // Diffusion coefficient.
   Vector D_scale_vec({/* NE */ BNE /* length scaling */ / (LNE / NNE * NX),
                       /* SEP */ BSEP /* length scaling */ / (LSEP / NSEP * NX),
                       /* PE */ BPE /* length scaling */ / (LPE / NPE * NX)});
 
-  TransformedCoefficient D_coeff(&const_cast<GridFunctionCoefficient &>(ec_gfc), DE);
+  TransformedCoefficient D_coeff(&ec_gfc, DE);
   PWConstCoefficient D_scale_coeff(D_scale_vec);
   ProductCoefficient D(D_scale_coeff, D_coeff);
 

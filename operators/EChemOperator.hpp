@@ -45,6 +45,7 @@ protected:
 
   /// Coefficients for derived, i.e. not solved for, quantities
   ReactionCurrentCoefficient * _j;
+  ElectrodeReactionCurrentCoefficient * _je;
   ExchangeCurrentCoefficient * _jex;
   OpenCircuitPotentialCoefficient * _ocp;
   OverPotentialCoefficient * _op;
@@ -119,10 +120,7 @@ public:
   Array<real_t> GetParticleReactionCurrent();
 
   /// Construct coefficients for derived quantities
-  void ConstructReactionCurrent();
-  void ConstructExchangeCurrent();
-  void ConstructOpenCircuitPotential();
-  void ConstructOverPotential();
+  void ConstructCoefficients();
 
   /// Helpers for quantities which are constant within a region
   const real_t & GetSurfaceConcentration(const Region & r);
@@ -156,6 +154,7 @@ public:
       delete _sc[p];
 
     delete _j;
+    delete _je;
     delete _jex;
     delete _ocp;
     delete _op;

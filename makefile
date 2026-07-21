@@ -24,7 +24,8 @@ CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
                ReactionCurrentCoefficient.hpp \
                ElectrodeReactionCurrentCoefficient.hpp \
                OpenCircuitPotentialCoefficient.hpp \
-               OverPotentialCoefficient.hpp
+               OverPotentialCoefficient.hpp \
+               EPGradientLogCoefficient.hpp
 CL_INC_FILES = LGM50.hpp
 PR_SRC_FILES = settings.cpp
 PR_INC_FILES = settings.hpp \

@@ -7,7 +7,11 @@ using namespace mfem;
 
 class ElectrolyteConcentration : public Equation
 {
+protected:
+  Coefficient & j;
+  GridFunctionCoefficient & ec_gfc;
+
 public:
-  using Equation::Equation;
-  virtual void Update(const GridFunctionCoefficient & ec_gfc, const Coefficient & j) override;
+  ElectrolyteConcentration(ParFiniteElementSpace & f, Coefficient & j, GridFunctionCoefficient & ec_gfc) : Equation(f), j(j), ec_gfc(ec_gfc) {};
+  virtual void Update();
 };
