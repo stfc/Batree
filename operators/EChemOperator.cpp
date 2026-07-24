@@ -50,12 +50,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _potential_trueOffsets.PartialSum();
   _concentration_trueOffsets.PartialSum();
 
-  if (!Mpi::WorldRank())
-  {
-    std::cout << "Variables: " << NEQS << std::endl;
-    std::cout << "Unknowns (rank 0): " << _block_trueOffsets[NEQS] << std::endl;
-  }
-
   // Set offsets for solution (complete, potential and concentration) true vectors
   _x.Update(_block_trueOffsets);
   _xp.Update(_x, _potential_trueOffsets);

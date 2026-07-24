@@ -276,3 +276,4 @@ where $\sigma$ and $f$ are constants.
 [^1]: Ai, W., & Liu, Y. (2023). *Improving the convergence rate of Newman’s battery model using 2nd order finite element method*. Journal of Energy Storage, 67, 107512. https://doi.org/10.1016/j.est.2023.107512
 [^2]: Chen et al., (2020). *Development of Experimental Techniques for Parameterization of Multi-scale Lithium-ion Battery Models*. Journal of The Electrochemical Society, 167(8). https://iopscience.iop.org/article/10.1149/1945-7111/ab9050
 [^3]: Brosa Planella et al., (2022). *A continuum of physics-based lithium-ion battery models reviewed*. Progress in Energy, 4(4), 042003. https://iopscience.iop.org/article/10.1088/2516-1083/ac7d31
+[^4]: Han et al., (2021). *A numerically efficient method of solving the full-order pseudo-2-dimensional (P2D) Li-ion cell model*. Journal of Power Sources, 490, 229571. https://doi.org/10.1016/j.jpowsour.2021.229571
