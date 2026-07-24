@@ -127,20 +127,26 @@ main(int argc, char * argv[])
   // Get the total number of dofs in the system (including boundaries), for
   // both the macro and micro problems, across all processors. This is for
   // reporting purposes only.
-  {
-    HYPRE_BigInt fe_size_global = NMACRO * x_h1space->GlobalTrueVSize();
-    for (unsigned p = 0; p < NPAR; p++)
-      fe_size_global += r_h1space[p]->GlobalTrueVSize();
-
-    if (Mpi::Root())
-      std::cout << "Unknowns (total): " << fe_size_global << std::endl;
-  }
+  HYPRE_BigInt fe_size_global = NMACRO * x_h1space->GlobalTrueVSize();
+  for (unsigned p = 0; p < NPAR; p++)
+    fe_size_global += r_h1space[p]->GlobalTrueVSize();
 
   // Get the number of dofs in the system (including boundaries), for
   // both the macro and micro problems, _owned_ by this processor.
   HYPRE_BigInt fe_size_owned = NMACRO * x_h1space->GetTrueVSize();
   for (unsigned p = 0; p < NPAR; p++)
     fe_size_owned += r_h1space[p]->GetTrueVSize();
+
+  if (Mpi::Root())
+  {
+    std::cout << std::endl;
+    std::cout << "# vars: " << (SPM ? NPAR : SPMe ? NMACROC + NPAR : P2D ? NEQS : 0) << std::endl;
+    std::cout << "# dofs (total): "
+              << fe_size_global - (SPMe ? NMACROP * x_h1space->GlobalTrueVSize() : 0) << std::endl;
+    std::cout << "# dofs (rank 0): "
+              << fe_size_owned - (SPMe ? NMACROP * x_h1space->GetTrueVSize() : 0) << std::endl;
+    std::cout << std::endl;
+  }
 
   // Initialize the ElectroChemistry operator.
   real_t t = 0.0;
