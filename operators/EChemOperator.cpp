@@ -50,7 +50,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   _potential_trueOffsets.PartialSum();
   _concentration_trueOffsets.PartialSum();
 
-  if (!Mpi::WorldRank())
+  if (Mpi::Root())
   {
     std::cout << "Variables: " << NEQS << std::endl;
     std::cout << "Unknowns (rank 0): " << _block_trueOffsets[NEQS] << std::endl;

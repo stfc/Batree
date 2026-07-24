@@ -86,6 +86,6 @@ SolidConcentration::DebuggingCheck(const BlockVector & x)
   QuadratureSpace x_qspace(fespace.GetParMesh(), fespace.FEColl()->GetOrder() + 2);
   real_t integral = x_qspace.Integrate(ur2);
 
-  if (!Mpi::WorldRank())
+  if (Mpi::Root())
     std::cout << "Total flux accumulated (" << particle_id << ") = " << integral << std::endl;
 }
