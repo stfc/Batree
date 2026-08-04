@@ -57,6 +57,19 @@ SolidConcentration::SurfaceConcentration(const BlockVector & x)
   return csurf;
 }
 
+real_t
+SolidConcentration::AverageConcentration(const BlockVector & x)
+{
+  ParGridFunction sc_gf(&fespace);
+  sc_gf.SetFromTrueDofs(x.GetBlock(SC + particle_id));
+  GridFunctionCoefficient sc_gfc(&sc_gf);
+  FunctionCoefficient r2([=](const Vector & x) { return x(0) * x(0); });
+  ProductCoefficient scr2(sc_gfc, r2);
+
+  QuadratureSpace x_qspace(fespace.GetParMesh(), fespace.FEColl()->GetOrder() + 2);
+  return 3 * x_qspace.Integrate(scr2);
+}
+
 int
 SolidConcentration::FindSurfaceTrueDof()
 {
@@ -73,19 +86,4 @@ SolidConcentration::FindSurfaceRank()
       &surface_owned, 1, MPI_CXX_BOOL, is_surface_rank.GetData(), 1, MPI_CXX_BOOL, MPI_COMM_WORLD);
   return std::distance(is_surface_rank.begin(),
                        std::find(is_surface_rank.begin(), is_surface_rank.end(), true));
-}
-void
-SolidConcentration::DebuggingCheck(const BlockVector & x)
-{
-  ParGridFunction u_gf(&fespace);
-  u_gf.SetFromTrueDofs(x.GetBlock(SC + particle_id));
-  GridFunctionCoefficient u_gfc(&u_gf);
-  FunctionCoefficient r2([](const Vector & x) { return x(0) * x(0); });
-  ProductCoefficient ur2(u_gfc, r2);
-
-  QuadratureSpace x_qspace(fespace.GetParMesh(), fespace.FEColl()->GetOrder() + 2);
-  real_t integral = x_qspace.Integrate(ur2);
-
-  if (Mpi::Root())
-    std::cout << "Total flux accumulated (" << particle_id << ") = " << integral << std::endl;
 }

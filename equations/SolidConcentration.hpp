@@ -39,13 +39,13 @@ public:
 
   virtual void Update(const Coefficient & j) override;
   real_t SurfaceConcentration(const BlockVector & x);
+  real_t AverageConcentration(const BlockVector & x);
+  int FindSurfaceTrueDof();
+  int FindSurfaceRank();
   int GetParticleRank() { return particle_rank; }
   int GetSurfaceRank() { return surface_rank; }
   bool IsParticleOwned() { return particle_owned; }
   bool IsSurfaceOwned() { return surface_owned; }
   Region GetParticleRegion() { return particle_region; }
   int GetParticleDof() { return particle_dof; }
-  int FindSurfaceTrueDof();
-  int FindSurfaceRank();
-  void DebuggingCheck(const BlockVector & x);
 };
