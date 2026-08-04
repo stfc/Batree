@@ -105,6 +105,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   // Set initial conditions
   _x = 0.;
   _x.GetBlock(EC) = CE0;
+  for (unsigned p = 0; p < NPAR; p++)
+    _x.GetBlock(SC + p) = _sc[p]->GetParticleRegion() == NE ? CN0 : CP0;
   SetConcentrationGridFunctionsFromTrueVectors();
   SetPotentialGridFunctionsFromTrueVectors();
 
@@ -249,16 +251,14 @@ EChemOperator::SetSurfaceConcentration()
     for (unsigned p = 0; p < NPAR; p++)
     {
       Region r = _sc[p]->GetParticleRegion();
-      real_t sc = (r == NE ? CN0 : CP0) + _sc[p]->SurfaceConcentration(_x);
-      _sc_array[r] = sc;
+      _sc_array[r] = _sc[p]->SurfaceConcentration(_x);
       MPI_Bcast(&_sc_array[r], 1, MFEM_MPI_REAL_T, _sc[p]->GetParticleRank(), MPI_COMM_WORLD);
     }
   else if (P2D)
   {
     for (unsigned p = 0; p < NPAR; p++)
     {
-      Region r = _sc[p]->GetParticleRegion();
-      real_t sc = (r == NE ? CN0 : CP0) + _sc[p]->SurfaceConcentration(_x);
+      real_t sc = _sc[p]->SurfaceConcentration(_x);
       if (_sc[p]->IsParticleOwned())
         _sc_gf(_sc[p]->GetParticleDof()) = sc;
     }
