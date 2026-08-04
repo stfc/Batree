@@ -226,6 +226,11 @@ $$
 U_{\mathrm{eq}} = U_{\mathrm{p}}\left(\left.c_{\mathrm{p}}\right|_{r=R_{\mathrm{p}}}\right)-U_{\mathrm{n}}\left(\left.c_{\mathrm{n}}\right|_{r=R_{\mathrm{n}}}\right).
 $$
 
+## P2D model
+
+We do not currently solve for concentration, potentials and exchange current density in the same monolotical system.
+Instead, for each time step, we solve for the potentials and exchange current density within a self-consistency iterative loop [^4], and then for the concentrations implicitly.
+
 ## MFEM scaling
 
 The problem is solved on a uniform grid $\bar{x} \in[0,1]$ with spacing $\Delta \bar{x}_{\mathrm{ref}}=1 / N X$.
