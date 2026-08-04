@@ -119,14 +119,20 @@ main(int argc, char * argv[])
     last_step = t + dt >= t_final - dt / 2;
 
     ode_solver->Step(x, t, dt);
-    real_t V = oper.GetVoltage();
-    // TODO: Stop sim at cutoff voltage
 
-    if (Mpi::Root() && output_steps && ti == 1)
-      std::cout << "step\ttime[s]\tvoltage[V]" << std::endl;
+    if (output_steps && ti == 1 && Mpi::Root())
+      std::cout << "step\ttime[s]\tvoltage[V]\tSoC[%]" << std::endl;
 
-    if (Mpi::Root() && output_steps && (last_step || (ti % output_steps) == 0))
-      std::cout << ti << "\t" << t << "\t" << V << std::endl;
+    if (output_steps && (last_step || (ti % output_steps) == 0))
+    {
+      real_t V = oper.GetVoltage();
+      real_t SoC = oper.GetSoC();
+      if (Mpi::Root())
+      {
+        std::cout << std::left << ti << "\t" << t << "\t";
+        std::cout << std::setw(8) << V << "\t" << SoC << std::endl;
+      }
+    }
   }
 
   // Free the used memory.
