@@ -41,14 +41,14 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
+  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
   {
-    switch (T.Attribute)
+    switch (Tr.Attribute)
     {
       case NE:
-        return _un(_surface_concentration_gfc->Eval(T, ip));
+        return _un(_surface_concentration_gfc->Eval(Tr, ip));
       case PE:
-        return _up(_surface_concentration_gfc->Eval(T, ip));
+        return _up(_surface_concentration_gfc->Eval(Tr, ip));
       default:
         return 0;
     }

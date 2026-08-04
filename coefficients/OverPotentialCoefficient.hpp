@@ -18,10 +18,7 @@ private:
 
 public:
   /// SPM(e)
-  OverPotentialCoefficient(const real_t & T, ExchangeCurrentCoefficient & jex)
-    : _jex(&jex), _op_pwcc(3)
-  {
-  }
+  OverPotentialCoefficient(ExchangeCurrentCoefficient & jex) : _jex(&jex), _op_pwcc(3) {}
 
   /// P2D
   OverPotentialCoefficient(const real_t & rpe,
@@ -42,22 +39,22 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
+  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
   {
-    switch (T.Attribute)
+    switch (Tr.Attribute)
     {
       case NE:
       {
-        const real_t sp = _solid_potential_gfc->Eval(T, ip);
-        const real_t ep = _electrolyte_potential_gfc->Eval(T, ip);
-        const real_t ocp = _ocp->Eval(T, ip);
+        const real_t sp = _solid_potential_gfc->Eval(Tr, ip);
+        const real_t ep = _electrolyte_potential_gfc->Eval(Tr, ip);
+        const real_t ocp = _ocp->Eval(Tr, ip);
         return sp - ep - ocp - *_rpe;
       }
       case PE:
       {
-        const real_t sp = _solid_potential_gfc->Eval(T, ip);
-        const real_t ep = _electrolyte_potential_gfc->Eval(T, ip);
-        const real_t ocp = _ocp->Eval(T, ip);
+        const real_t sp = _solid_potential_gfc->Eval(Tr, ip);
+        const real_t ep = _electrolyte_potential_gfc->Eval(Tr, ip);
+        const real_t ocp = _ocp->Eval(Tr, ip);
         return sp - ep - ocp + *_rpp - *_rpe;
       }
       default:

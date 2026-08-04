@@ -100,20 +100,20 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
+  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
   {
-    switch (T.Attribute)
+    switch (Tr.Attribute)
     {
       case NE:
       {
-        const real_t sc = _surface_concentration_gfc->Eval(T, ip);
-        const real_t ec = _electrolyte_concentration_gfc->Eval(T, ip);
+        const real_t sc = _surface_concentration_gfc->Eval(Tr, ip);
+        const real_t ec = _electrolyte_concentration_gfc->Eval(Tr, ip);
         return *_kn * sqrt(sc * ec * (1 - sc));
       }
       case PE:
       {
-        const real_t sc = _surface_concentration_gfc->Eval(T, ip);
-        const real_t ec = _electrolyte_concentration_gfc->Eval(T, ip);
+        const real_t sc = _surface_concentration_gfc->Eval(Tr, ip);
+        const real_t ec = _electrolyte_concentration_gfc->Eval(Tr, ip);
         return *_kp * sqrt(sc * ec * (1 - sc));
       }
       default:

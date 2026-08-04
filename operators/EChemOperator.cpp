@@ -391,7 +391,7 @@ EChemOperator::ConstructReactionCurrent()
   if (SPM || SPMe)
     _j = new ReactionCurrentCoefficient();
   else if (P2D)
-    _j = new ReactionCurrentCoefficient(T, *_jex, *_op);
+    _j = new ReactionCurrentCoefficient(*_jex, *_op);
 }
 
 //
@@ -465,7 +465,7 @@ void
 EChemOperator::ConstructOverPotential()
 {
   if (SPM || SPMe)
-    _op = new OverPotentialCoefficient(T, *_jex);
+    _op = new OverPotentialCoefficient(*_jex);
   else if (P2D)
     _op = new OverPotentialCoefficient(
         GetReferencePotential(E), GetReferencePotential(PE), _sp_gfc, _ep_gfc, *_ocp);

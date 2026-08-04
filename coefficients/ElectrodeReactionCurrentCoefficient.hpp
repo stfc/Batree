@@ -28,8 +28,8 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
+  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
   {
-    return T.Attribute == _r ? _a * _jex->Eval(T, ip) * exp(_sign * 0.5 * _op->Eval(T, ip)) : 0;
+    return Tr.Attribute == _r ? _a * _jex->Eval(Tr, ip) * exp(_sign * 0.5 * _op->Eval(Tr, ip)) : 0;
   }
 };
