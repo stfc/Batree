@@ -122,6 +122,7 @@ public:
 
   real_t GetVoltage();
   real_t GetVoltageMarquisCorrection();
+  real_t GetSoC();
 
   virtual void GetParticleDofs(Array<int> & particle_dofs,
                                Array<Region> & particle_regions,

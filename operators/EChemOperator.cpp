@@ -513,6 +513,22 @@ EChemOperator::GetVoltageMarquisCorrection()
   return eta_c + dphie + dphis;
 }
 
+//
+// SoC
+//
+
+real_t
+EChemOperator::GetSoC()
+{
+  real_t avg = 0.0;
+
+  for (unsigned p = 0; p < NPAR; p++)
+    if (_sc[p]->GetParticleRegion() == NE)
+      avg += _sc[p]->AverageConcentration(_x);
+
+  return 100 * avg / NNEPAR;
+}
+
 void
 EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
                                Array<Region> & particle_regions,
