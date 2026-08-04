@@ -105,6 +105,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
   // Set initial conditions
   _x = 0.;
   _x.GetBlock(EC) = CE0;
+  for (unsigned p = 0; p < NPAR; p++)
+    _x.GetBlock(SC + p) = _sc[p]->GetParticleRegion() == NE ? CN0 : CP0;
   SetConcentrationGridFunctionsFromTrueVectors();
   SetPotentialGridFunctionsFromTrueVectors();
 
@@ -249,16 +251,14 @@ EChemOperator::SetSurfaceConcentration()
     for (unsigned p = 0; p < NPAR; p++)
     {
       Region r = _sc[p]->GetParticleRegion();
-      real_t sc = (r == NE ? CN0 : CP0) + _sc[p]->SurfaceConcentration(_x);
-      _sc_array[r] = sc;
+      _sc_array[r] = _sc[p]->SurfaceConcentration(_x);
       MPI_Bcast(&_sc_array[r], 1, MFEM_MPI_REAL_T, _sc[p]->GetParticleRank(), MPI_COMM_WORLD);
     }
   else if (P2D)
   {
     for (unsigned p = 0; p < NPAR; p++)
     {
-      Region r = _sc[p]->GetParticleRegion();
-      real_t sc = (r == NE ? CN0 : CP0) + _sc[p]->SurfaceConcentration(_x);
+      real_t sc = _sc[p]->SurfaceConcentration(_x);
       if (_sc[p]->IsParticleOwned())
         _sc_gf(_sc[p]->GetParticleDof()) = sc;
     }
@@ -391,7 +391,7 @@ EChemOperator::ConstructReactionCurrent()
   if (SPM || SPMe)
     _j = new ReactionCurrentCoefficient();
   else if (P2D)
-    _j = new ReactionCurrentCoefficient(T, *_jex, *_op);
+    _j = new ReactionCurrentCoefficient(*_jex, *_op);
 }
 
 //
@@ -465,7 +465,7 @@ void
 EChemOperator::ConstructOverPotential()
 {
   if (SPM || SPMe)
-    _op = new OverPotentialCoefficient(T, *_jex);
+    _op = new OverPotentialCoefficient(*_jex);
   else if (P2D)
     _op = new OverPotentialCoefficient(
         GetReferencePotential(E), GetReferencePotential(PE), _sp_gfc, _ep_gfc, *_ocp);
@@ -511,6 +511,22 @@ EChemOperator::GetVoltageMarquisCorrection()
   real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;
+}
+
+//
+// SoC
+//
+
+real_t
+EChemOperator::GetSoC()
+{
+  real_t avg = 0.0;
+
+  for (unsigned p = 0; p < NPAR; p++)
+    if (_sc[p]->GetParticleRegion() == NE)
+      avg += _sc[p]->AverageConcentration(_x);
+
+  return 100 * avg / NNEPAR;
 }
 
 void

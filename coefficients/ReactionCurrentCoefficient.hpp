@@ -14,9 +14,7 @@ public:
   ReactionCurrentCoefficient() : _j_pwcc(Vector{+I / AN / LNE, 0., -I / AP / LPE}) {}
 
   /// P2D
-  ReactionCurrentCoefficient(const real_t & T,
-                             ExchangeCurrentCoefficient & jex,
-                             OverPotentialCoefficient & op)
+  ReactionCurrentCoefficient(ExchangeCurrentCoefficient & jex, OverPotentialCoefficient & op)
     : _jex(&jex), _op(&op)
   {
   }
@@ -25,11 +23,11 @@ public:
   virtual PWConstCoefficient & Eval() { return _j_pwcc; }
 
   /// P2D (and any integrators)
-  virtual real_t Eval(ElementTransformation & T, const IntegrationPoint & ip) override
+  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
   {
     if (_jex)
-      return 2 * _jex->Eval(T, ip) * sinh(.5 * _op->Eval(T, ip) / constants::T);
+      return 2 * _jex->Eval(Tr, ip) * sinh(.5 * _op->Eval(Tr, ip) / T);
     else
-      return _j_pwcc.Eval(T, ip);
+      return _j_pwcc.Eval(Tr, ip);
   }
 };

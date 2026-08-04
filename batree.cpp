@@ -18,7 +18,7 @@ main(int argc, char * argv[])
   // Parse command-line options.
   std::string model = "SPM";
   int order = 1;
-  int ode_solver_type = 1;
+  int ode_solver_type = 21;
   real_t t_final = 3600.0;
   real_t dt = 1.0;
   int output_steps = 5;
@@ -29,10 +29,7 @@ main(int argc, char * argv[])
   OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
   args.AddOption(&order, "-o", "--order", "Order (degree) of the finite elements.");
-  args.AddOption(&ode_solver_type,
-                 "-s",
-                 "--ode-solver",
-                 "ODE solver: 1 - Backward Euler, 2 - SDIRK2, 3 - SDIRK3");
+  args.AddOption(&ode_solver_type, "-s", "--ode-solver", ODESolver::Types.c_str());
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
   args.AddOption(&dt, "-dt", "--time-step", "Time step.");
   args.AddOption(&output_steps, "-os", "--output-steps", "Output every n-th timestep.");
@@ -50,49 +47,7 @@ main(int argc, char * argv[])
   // singly diagonal implicit Runge-Kutta (SDIRK) methods, as well as
   // explicit Runge-Kutta methods are available in MFEM. For now, we only
   // support implicit methods and we have only tested Backward Euler.
-  ODESolver * ode_solver;
-  switch (ode_solver_type)
-  {
-    // Implicit L-stable methods
-    case 1:
-      ode_solver = new BackwardEulerSolver;
-      break;
-    case 2:
-      ode_solver = new SDIRK23Solver(2);
-      break;
-    case 3:
-      ode_solver = new SDIRK33Solver;
-      break;
-    // Explicit methods
-    case 11:
-      ode_solver = new ForwardEulerSolver;
-      break;
-    case 12:
-      ode_solver = new RK2Solver(0.5);
-      break; // midpoint method
-    case 13:
-      ode_solver = new RK3SSPSolver;
-      break;
-    case 14:
-      ode_solver = new RK4Solver;
-      break;
-    case 15:
-      ode_solver = new GeneralizedAlphaSolver(0.5);
-      break;
-    // Implicit A-stable methods (not L-stable)
-    case 22:
-      ode_solver = new ImplicitMidpointSolver;
-      break;
-    case 23:
-      ode_solver = new SDIRK23Solver;
-      break;
-    case 24:
-      ode_solver = new SDIRK34Solver;
-      break;
-    default:
-      std::cout << "Unknown ODE solver type: " << ode_solver_type << '\n';
-      return 1;
-  }
+  std::unique_ptr<mfem::ODESolver> ode_solver = ODESolver::Select(ode_solver_type);
 
   // Initialise grid and layout properties dependent on the electrochemical model and FE order
   init_settings(model, order);
@@ -164,18 +119,23 @@ main(int argc, char * argv[])
     last_step = t + dt >= t_final - dt / 2;
 
     ode_solver->Step(x, t, dt);
-    real_t V = oper.GetVoltage();
-    // TODO: Stop sim at cutoff voltage
 
-    if (Mpi::Root() && output_steps && ti == 1)
-      std::cout << "step\ttime[s]\tvoltage[V]" << std::endl;
+    if (output_steps && ti == 1 && Mpi::Root())
+      std::cout << "step\ttime[s]\tvoltage[V]\tSoC[%]" << std::endl;
 
-    if (Mpi::Root() && output_steps && (last_step || (ti % output_steps) == 0))
-      std::cout << ti << "\t" << t << "\t" << V << std::endl;
+    if (output_steps && (last_step || (ti % output_steps) == 0))
+    {
+      real_t V = oper.GetVoltage();
+      real_t SoC = oper.GetSoC();
+      if (Mpi::Root())
+      {
+        std::cout << std::left << ti << "\t" << t << "\t";
+        std::cout << std::setw(8) << V << "\t" << SoC << std::endl;
+      }
+    }
   }
 
   // Free the used memory.
-  delete ode_solver;
   delete x_pmesh;
   for (unsigned p = 0; p < NPAR; p++)
     delete r_pmesh[p];
