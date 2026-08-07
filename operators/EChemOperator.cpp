@@ -507,7 +507,7 @@ EChemOperator::GetVoltageMarquisCorrection()
   ce_pwc.ZeroCoefficient(PE);
 
   real_t eta_c = (2.0 * T / CE0) * (1 - TPLUS) * (ce_ne_int - ce_pe_int);
-  real_t dphie = (I / KS) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
+  real_t dphie = (I / Kappa(CE0)) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
   real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;

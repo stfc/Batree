@@ -27,8 +27,7 @@ CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
                OverPotentialCoefficient.hpp
 CL_INC_FILES = LGM50.hpp
 PR_SRC_FILES = settings.cpp
-PR_INC_FILES = settings.hpp \
-               constants.hpp
+PR_INC_FILES = settings.hpp
 
 SRC_FILES = $(addprefix equations/, $(EQ_SRC_FILES)) \
             $(addprefix operators/, $(OP_SRC_FILES)) \
