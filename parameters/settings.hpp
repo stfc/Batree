@@ -164,7 +164,5 @@ Kappa(real_t ce)
   return CELL->kappa(ce * ce_scale) / kappa_scale;
 }
 
-const real_t KS = Kappa(CE0); // / kappa_scale; // Scaled electrolyte conductivity.
-
 void init_settings(std::string m, std::string c, int order);
 }
