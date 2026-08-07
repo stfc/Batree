@@ -21,7 +21,8 @@ const real_t kn_dim = 6.48e-7;      // Negative electrode reaction rate [A m^{2.
 const real_t Dn = 3.3e-14;          // Diffusion coefficient, negative electrode [m^2/s]
 const real_t An = 3 * eps_n_s / rn; // Negative electrode area [m^{-1}]
 
-const real_t sig_n = 215.; // Negative electrode conductivity [S/m]
+const real_t sig_n = 215.;  // Negative electrode conductivity [S/m]
+const real_t brugg_n = 1.5; // Negative electrode Bruggeman coefficient
 
 inline const real_t
 Un(real_t cs) // Negative electrode open circuit potential [V]
@@ -45,7 +46,8 @@ const real_t kp_dim = 3.42e-6;      // Positive electrode reaction rate [A m^{2.
 const real_t Dp = 4.0e-15;          // Diffusion coefficient, positive electrode [m^2/s]
 const real_t Ap = 3 * eps_p_s / rp; // Positive electrode area [m^2]
 
-const real_t sig_p = 0.18; // Positive electrode conductivity [S/m]
+const real_t sig_p = 0.18;  // Positive electrode conductivity [S/m]
+const real_t brugg_p = 1.5; // Positive electrode Bruggeman coefficient
 
 inline const real_t
 Up(real_t cs) // Positive electrode open circuit potential [V]
@@ -55,29 +57,29 @@ Up(real_t cs) // Positive electrode open circuit potential [V]
 }
 
 // Separator.
-const real_t ls = 12e-6;     // Separator thickness [m]
-const real_t tplus = 0.2594; // Transference number of Li ions
-const real_t eps_s = 0.47;   // Separator electrolyte volume fraction
+const real_t ls = 12e-6;    // Separator thickness [m]
+const real_t eps_s = 0.47;  // Separator electrolyte volume fraction
+const real_t brugg_s = 1.5; // Separator Bruggeman coefficient
 
 // Electrolyte.
-const real_t ce0 = 1000.0; // Initial electrolyte concentration [mol/(m^3)]
+const real_t tplus = 0.2594; // Transference number of Li ions
+const real_t ce0 = 1000.0;   // Initial electrolyte concentration [mol/(m^3)]
 inline const real_t
 De(real_t ce) // Diffusivity of Li ions in the electrolyte [m^2/s]
 {
   return 8.794e-11 * pow(ce / 1000, 2) - 3.972e-10 * (ce / 1000) + 4.862e-10;
 }
 inline const real_t
-kappa(real_t x) // Electronic conductivity [S/m]
+kappa(real_t ce) // Electronic conductivity [S/m]
 {
-  return 0.1297 * pow(x / 1000, 3) - 2.51 * pow(x / 1000, 1.5) + 3.329 * (x / 1000);
+  return 0.1297 * pow(ce / 1000, 3) - 2.51 * pow(ce / 1000, 1.5) + 3.329 * (ce / 1000);
 }
 
 // Cell parameters.
-const real_t llayer = 1.58;               // Wound layer length [m]
-const real_t wlayer = 6.5e-2;             // Wound layer width [m]
-const real_t cell_area = wlayer * llayer; // Wound layer area (one layer for wound cells) [m^2]
+const real_t llayer = 1.58;                        // Layer length [m]
+const real_t wlayer = 6.5e-2;                      // Layer width [m]
+const unsigned nlayer = 1;                         // Number of layers (one layer for wound cells)
+const real_t cell_area = nlayer * wlayer * llayer; // Total area [m^2]
 
 const real_t I_typ = 5.0; // Or I1C in Jubat. Reference total current [A]
-
-const real_t brugg = 1.5; // Currently the same in each region
 }

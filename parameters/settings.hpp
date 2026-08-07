@@ -9,9 +9,8 @@ extern const bool P2D;  // Whether running P2D model
 extern const unsigned NNE;  // Number of elements in the Negative Electrode
 extern const unsigned NSEP; // Number of elements in the Separator
 extern const unsigned NPE;  // Number of elements in the Positive Electrode
-extern const unsigned
-    NX; // Number of elements in the X-dimension (i.e Electrolye) (Sum of the above three)
-extern const unsigned NR; // Number of elements in the R-dimension (i.e Particle)
+extern const unsigned NX;   // Number of elements in the X-dimension (i.e Electrolye) (sum of above)
+extern const unsigned NR;   // Number of elements in the R-dimension (i.e Particle)
 
 extern const unsigned NNEPAR; // Number of Negative Electrode PARticle
 extern const unsigned NPEPAR; // Number of Positive Electrode PARticle

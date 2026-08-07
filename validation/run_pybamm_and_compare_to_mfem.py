@@ -1,6 +1,4 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pybamm
 import subprocess
@@ -49,7 +47,7 @@ def easyplot(x, y, colour, linestyle, fig, label, marker_indx):
 # Function to run Batree and extract results from output.
 def run_batree(mfem_executable,sim_type):
 
-    print(''.join(["Running ", sim_type, " simulation in batree..."]))
+    print(''.join(["Running ", sim_type, " simulation in Batree..."]))
     cmd = [mfem_executable, "-m", sim_type]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -59,8 +57,8 @@ def run_batree(mfem_executable,sim_type):
     for line in result.stdout.splitlines():
         parts = line.split()
 
-        if len(parts) == 3 and parts[0].isdigit():
-            step, time, voltage = parts
+        if len(parts) == 4 and parts[0].isdigit():
+            _, time, voltage, _ = parts
             times.append(float(time))
             voltages.append(float(voltage))
 
@@ -84,17 +82,17 @@ def run_pybamm(model, parameter_values):
 if PLOT_SPM and PLOT_MFEM:
 
     time, voltage = run_batree(mfem_executable, "SPM")
-    easyplot(time, voltage, blue, "-o", 1, "SPM (MFEM)", mfem_indx)
+    easyplot(time, voltage, blue, "-o", 1, "SPM (Batree)", mfem_indx)
 
 if PLOT_SPMe and PLOT_MFEM:
 
     time, voltage = run_batree(mfem_executable, "SPMe")
-    easyplot(time, voltage, red, "-o", 1, "SPMe (MFEM)", mfem_indx)
+    easyplot(time, voltage, red, "-o", 1, "SPMe (Batree)", mfem_indx)
 
 if PLOT_DFN and PLOT_MFEM:
 
     time, voltage = run_batree(mfem_executable, "P2D")
-    easyplot(time, voltage, black, "-o", 1, "DFN (MFEM)", mfem_indx)
+    easyplot(time, voltage, black, "-o", 1, "DFN (Batree)", mfem_indx)
 
 if PLOT_SPM and PLOT_PYBAMM:
 
