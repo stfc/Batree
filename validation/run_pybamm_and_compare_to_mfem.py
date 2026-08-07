@@ -1,6 +1,4 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 import pybamm
 import subprocess
@@ -60,7 +58,7 @@ def run_batree(mfem_executable,sim_type):
         parts = line.split()
 
         if len(parts) == 3 and parts[0].isdigit():
-            step, time, voltage = parts
+            _, time, voltage = parts
             times.append(float(time))
             voltages.append(float(voltage))
 
