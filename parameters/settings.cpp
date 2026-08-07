@@ -1,4 +1,5 @@
 #include "cells/LGM50.hpp"
+#include "cells/Enertech.hpp"
 #include "mfem.hpp"
 
 using namespace mfem;
@@ -26,6 +27,7 @@ unsigned NEQS = 0;
 
 Cell * CELL = nullptr;
 LGM50 LGM50_CELL = LGM50();
+Enertech Enertech_CELL = Enertech();
 
 real_t F = 96485.33289;
 real_t R = 8.314;
@@ -117,6 +119,8 @@ init_settings(std::string m, std::string c, int order)
 
   if (c == "lgm50" || c == "chen2020")
     CELL = &LGM50_CELL;
+  else if (c == "enertech" || c == "ai2020")
+    CELL = &Enertech_CELL;
   else
     mfem_error("Unrecognised cell name.");
 
