@@ -17,6 +17,7 @@ main(int argc, char * argv[])
 
   // Parse command-line options.
   std::string model = "SPM";
+  std::string cell = "LGM50";
   int order = 1;
   int ode_solver_type = 21;
   real_t t_final = 3600.0;
@@ -28,6 +29,7 @@ main(int argc, char * argv[])
 
   OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
+  args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50.");
   args.AddOption(&order, "-o", "--order", "Order (degree) of the finite elements.");
   args.AddOption(&ode_solver_type, "-s", "--ode-solver", ODESolver::Types.c_str());
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
@@ -50,7 +52,7 @@ main(int argc, char * argv[])
   std::unique_ptr<mfem::ODESolver> ode_solver = ODESolver::Select(ode_solver_type);
 
   // Initialise grid and layout properties dependent on the electrochemical model and FE order
-  init_settings(model, order);
+  init_settings(model, cell, order);
 
   // Build the 1d mesh for the macro problem and tag its elements according to their region.
   // Define the parallel mesh by a partitioning of the serial mesh.
