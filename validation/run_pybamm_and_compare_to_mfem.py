@@ -57,8 +57,8 @@ def run_batree(mfem_executable,sim_type):
     for line in result.stdout.splitlines():
         parts = line.split()
 
-        if len(parts) == 3 and parts[0].isdigit():
-            _, time, voltage = parts
+        if len(parts) == 4 and parts[0].isdigit():
+            _, time, voltage, _ = parts
             times.append(float(time))
             voltages.append(float(voltage))
 
