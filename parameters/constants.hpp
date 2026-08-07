@@ -73,9 +73,9 @@ const real_t De_scale = L * L / te;
 
 // Transport efficiency (inverse MacMullin number). This is B(x) in Planella, and is absorbed into
 // the definition of kappa_ne/kappa_pe/kappa_sp in JuBat.
-const real_t BPE = pow(eps_p, brugg);
-const real_t BNE = pow(eps_n, brugg);
-const real_t BSEP = pow(eps_s, brugg);
+const real_t BPE = pow(eps_p, brugg_p);
+const real_t BNE = pow(eps_n, brugg_n);
+const real_t BSEP = pow(eps_s, brugg_s);
 
 const real_t j_scale = I_typ / a0 / L / cell_area;
 
@@ -140,9 +140,9 @@ DE(real_t ce)
   return De(ce * ce_scale) / De_scale;
 }
 inline const real_t
-Kappa(real_t x)
+Kappa(real_t ce)
 {
-  return kappa(x * ce_scale) / kappa_scale;
+  return kappa(ce * ce_scale) / kappa_scale;
 }
 
 const real_t KS = Kappa(CE0); // / kappa_scale; // Scaled electrolyte conductivity.
