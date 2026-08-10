@@ -13,7 +13,7 @@ public:
   inline const real_t rn() const override { return 5e-6; }
   inline const real_t ln() const override { return 7.65e-5; }
   inline const real_t eps_n() const override { return 0.33; }
-  inline const real_t eps_n_fi() const override { return 0.0; }
+  inline const real_t eps_n_fi() const override { return 0.06; }
   inline const real_t kn_dim() const override { return 9.648533289e-7; }
   inline const real_t Dn() const override { return 3.9e-14; }
   inline const real_t sig_n() const override { return 100.; }
@@ -30,7 +30,7 @@ public:
   inline const real_t rp() const override { return 3e-6; }
   inline const real_t lp() const override { return 6.8e-5; }
   inline const real_t eps_p() const override { return 0.32; }
-  inline const real_t eps_p_fi() const override { return 0.0; }
+  inline const real_t eps_p_fi() const override { return 0.06; }
   inline const real_t kp_dim() const override { return 9.648533289e-7; }
   inline const real_t Dp() const override { return 5.387e-15; }
   inline const real_t sig_p() const override { return 10.; }
