@@ -29,7 +29,7 @@ LGM50 LGM50_CELL = LGM50();
 
 real_t F = 96485.33289;
 real_t R = 8.314;
-real_t T_ref = 298.;
+real_t T_ref = 298.15;
 
 real_t t0 = 1.0;
 real_t r0 = 1e-6;
