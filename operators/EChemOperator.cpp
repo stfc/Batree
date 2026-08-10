@@ -19,7 +19,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
     _Solver(_x_h1space->GetComm())
 {
   _Solver.iterative_mode = true;
-  _Solver.SetRelTol(1e-11);
+  _Solver.SetRelTol(1e-12);
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
   _Solver.SetPreconditioner(_Prec);

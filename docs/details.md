@@ -6,7 +6,7 @@
 | ------------- | -------- | ------- | ------------------------------ | ------------------------- |
 | F             | $F$      | $96485$ | $\mathrm{C \  mol^{-1}}$       | Faraday constant          |
 | R             | $R$      | $8.314$ | $\mathrm{J\ mol^{-1}\ K^{-1}}$ | Universal gas constant    |
-| T_ref         | $T_0$    | $298$   | $\mathrm{K}$                   | Reference temperature     |
+| T_ref         | $T_0$    | $298.15$| $\mathrm{K}$                   | Reference temperature     |
 | r0            | $r_0$    | 1e-6    | $\mathrm{m}$                   | Reference particle radius |
 
 ### Reference scales
