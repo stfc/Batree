@@ -115,7 +115,7 @@ init_settings(std::string m, std::string c, int order)
 
   std::transform(c.begin(), c.end(), c.begin(), [](unsigned char c) { return std::tolower(c); });
 
-  if (c == "lgm50")
+  if (c == "lgm50" || c == "chen2020")
     CELL = &LGM50_CELL;
   else
     mfem_error("Unrecognised cell name.");
