@@ -12,43 +12,26 @@ os.makedirs(plots_dir, exist_ok=True)
 
 mfem_executable = "./../batree"
 
-# Plot flags
-PLOT_SPM   = True
-PLOT_SPMe  = True
-PLOT_DFN   = True
-
 PLOT_MFEM  = True
 PLOT_PYBAMM = True
 
-# Set parameter values for PyBaMM simulation (Chen2020 is the LG M50 battery)
-parameter_values = pybamm.ParameterValues("Chen2020")
-
-# Colours
-red   = (0.7, 0.2, 0.2)
-blue  = (0.2, 0.2, 0.7)
-black = (0.2, 0.2, 0.2)
-
-# For reducing number of markers on plot.
-mfem_indx = 30
-
 # Standard plot settings for all plots.
-def easyplot(x, y, colour, linestyle, fig, label, marker_indx):
-    plt.figure(fig)
-    plt.plot(
+def easyplot(ax, x, y, colour, linestyle, label, marker_indx = 1):
+
+    ax.plot(
         x, y,
         linestyle,
         color=colour,
         linewidth=1.3,
         label=label,
-        markerfacecolor="w",
         markevery=marker_indx
     )
 
 # Function to run Batree and extract results from output.
-def run_batree(mfem_executable,sim_type):
+def run_batree(mfem_executable, sim_type, cell):
 
-    print(''.join(["Running ", sim_type, " simulation in Batree..."]))
-    cmd = [mfem_executable, "-m", sim_type]
+    print("Running " + sim_type + " simulation in Batree for cell " + cell + "...")
+    cmd = [mfem_executable, "-m", sim_type, "-c", cell]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     times = []
@@ -65,11 +48,12 @@ def run_batree(mfem_executable,sim_type):
     return times, voltages
 
 
-# Function to run PyBAMM.
-def run_pybamm(model, parameter_values):
+# Function to run PyBAMM and extract results from output.
+def run_pybamm(model, cell):
 
-    print(''.join(["Running ", str(model.__class__.__name__), " simulation in PyBaMM..."]))
-    sim = pybamm.Simulation(model, parameter_values=parameter_values)
+    print("Running " + str(model.__class__.__name__) + " simulation in PyBaMM for cell " + cell + "...")
+    solver = pybamm.IDAKLUSolver(options={"dt_max" : 1})
+    sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), solver=solver)
     soln = sim.solve([0, 3600])
 
     time = soln["Time [s]"].entries
@@ -77,43 +61,36 @@ def run_pybamm(model, parameter_values):
 
     return time, voltage
 
-
 # Running simulations and plotting results.
-if PLOT_SPM and PLOT_MFEM:
+def run_and_plot(ax, cell, sim_type, pybamm_model, colour):
 
-    time, voltage = run_batree(mfem_executable, "SPM")
-    easyplot(time, voltage, blue, "-o", 1, "SPM (Batree)", mfem_indx)
+    if PLOT_MFEM:
+        time, voltage = run_batree(mfem_executable, sim_type, cell)
+        easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 10)
 
-if PLOT_SPMe and PLOT_MFEM:
-
-    time, voltage = run_batree(mfem_executable, "SPMe")
-    easyplot(time, voltage, red, "-o", 1, "SPMe (Batree)", mfem_indx)
-
-if PLOT_DFN and PLOT_MFEM:
-
-    time, voltage = run_batree(mfem_executable, "P2D")
-    easyplot(time, voltage, black, "-o", 1, "DFN (Batree)", mfem_indx)
-
-if PLOT_SPM and PLOT_PYBAMM:
-
-    time,voltage = run_pybamm(pybamm.lithium_ion.SPM(), parameter_values)
-    easyplot(time, voltage, blue, "--s", 1, "SPM (PyBaMM)", 2)
-
-if PLOT_SPMe and PLOT_PYBAMM:
-
-    time,voltage = run_pybamm(pybamm.lithium_ion.SPMe(), parameter_values)
-    easyplot(time, voltage, red, "--s", 1, "SPMe (PyBaMM)", 5)
-
-if PLOT_DFN and PLOT_PYBAMM:
-
-    time,voltage = run_pybamm(pybamm.lithium_ion.DFN(), parameter_values)
-    easyplot(time, voltage, black, "--s", 1, "DFN (PyBaMM)", 5)
+    if PLOT_PYBAMM:
+        time, voltage = run_pybamm(pybamm_model, cell)
+        easyplot(ax, time, voltage, colour, "-", f"{sim_type} (PyBaMM)")
 
 
-# Tidying up and saving figure.
-plt.figure(1)
-plt.xlim(0, 3600)
-plt.xlabel("Time (s)")
-plt.ylabel("Voltage (V)")
-plt.legend(loc="lower left")
-plt.savefig(os.path.join(plots_dir, "voltage_compare.png"), dpi=300)
+cells = ["Chen2020", "Ai2020"]
+simulations = [
+    ("SPM", pybamm.lithium_ion.SPM(), (197 / 255, 27 / 255, 138 / 255)),
+    ("SPMe", pybamm.lithium_ion.SPMe(), (44 / 255, 127 / 255, 184 / 255)),
+    ("P2D", pybamm.lithium_ion.DFN(), (49 / 255, 163 / 255, 84 / 255)),
+]
+
+fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharex=True, sharey=True, constrained_layout=True)
+
+for i, cell in enumerate(cells):
+    ax = axs[i]
+    for sim_type, pybamm_model, colour in simulations:
+        run_and_plot(ax, cell, sim_type, pybamm_model, colour)
+    ax.set_title(cell)
+    ax.set_xlim(0, 3600)
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Voltage (V)")
+    ax.grid(True, which="major", linestyle="--", alpha=0.4)
+    ax.legend(fontsize="small", loc="lower left")
+
+plt.savefig(os.path.join(plots_dir, "comparison.png"), dpi=300)
