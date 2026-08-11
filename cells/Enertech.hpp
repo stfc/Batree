@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Cell.hpp"
+#include "_EnertechUnSpline.hpp"
+#include "_EnertechUpSpline.hpp"
 #include "mfem.hpp"
 
 using namespace mfem;
@@ -20,9 +22,17 @@ public:
   inline const real_t brugg_n() const override { return 2.914; }
   inline const real_t Un(real_t cs) const override
   {
-    return -2058.29865 * pow(cs, 9) + 10040.08960 * pow(cs, 8) - 20824.86740 * pow(cs, 7) +
-           23911.86578 * pow(cs, 6) - 16576.36920 * pow(cs, 5) + 7098.09151 * pow(cs, 4) -
-           1845.43634 * pow(cs, 3) + 275.31114 * pow(cs, 2) - 21.20097 * cs + 0.84498;
+    const unsigned n = NBREAKS_GRAPHITE;
+    const real_t * b = BREAKS_GRAPHITE;
+
+    // locate interval: breaks[i] <= cs < breaks[i+1]
+    const unsigned idx = std::distance(b, std::upper_bound(b, b + n, cs)) - 1;
+    MFEM_ASSERT(idx >= 0 && idx < n - 1, "Enertech::Un: cs out of range");
+
+    // compute spline value
+    const real_t dx = cs - b[idx];
+    const real_t * c = COEFS_GRAPHITE[idx];
+    return ((c[0] * dx + c[1]) * dx + c[2]) * dx + c[3];
   }
 
   inline const real_t cp0() const override { return 21725.; }
@@ -37,9 +47,17 @@ public:
   inline const real_t brugg_p() const override { return 1.83; }
   inline const real_t Up(real_t cs) const override
   {
-    return -107897.40 * pow(cs, 9) + 677406.28 * pow(cs, 8) - 1873803.91 * pow(cs, 7) +
-           2996535.44 * pow(cs, 6) - 3052331.36 * pow(cs, 5) + 2053377.31 * pow(cs, 4) -
-           912135.88 * pow(cs, 3) + 257964.35 * pow(cs, 2) - 42146.98 * cs + 3035.67;
+    const unsigned n = NBREAKS_LICO2;
+    const real_t * b = BREAKS_LICO2;
+
+    // locate interval: breaks[i] <= cs < breaks[i+1]
+    const unsigned idx = std::distance(b, std::upper_bound(b, b + n, cs)) - 1;
+    MFEM_ASSERT(idx >= 0 && idx < n - 1, "Enertech::Up: cs out of range");
+
+    // compute spline value
+    const real_t dx = cs - b[idx];
+    const real_t * c = COEFS_LICO2[idx];
+    return ((c[0] * dx + c[1]) * dx + c[2]) * dx + c[3];
   }
 
   inline const real_t ls() const override { return 2.5e-5; }
@@ -56,9 +74,9 @@ public:
   inline const real_t kappa(real_t ce) const override
   {
     const real_t T = 298.15;
-    real_t inner = (-10.5 + 0.668e-3 * ce + 0.494e-6 * ce * ce) +
-                   (0.074 - 1.78e-5 * ce - 8.86e-10 * ce * ce) * T +
-                   (-6.96e-5 + 2.8e-8 * ce) * T * T;
+    const real_t inner = (-10.5 + 0.668e-3 * ce + 0.494e-6 * ce * ce) +
+                         (0.074 - 1.78e-5 * ce - 8.86e-10 * ce * ce) * T +
+                         (-6.96e-5 + 2.8e-8 * ce) * T * T;
     return 1e-4 * ce * inner * inner;
   }
 

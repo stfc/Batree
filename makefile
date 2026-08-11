@@ -27,7 +27,9 @@ CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
                OverPotentialCoefficient.hpp
 CL_INC_FILES = Cell.hpp \
                LGM50.hpp \
-               Enertech.hpp
+               Enertech.hpp \
+               _EnertechUnSpline.hpp \
+               _EnertechUpSpline.hpp
 PR_SRC_FILES = settings.cpp
 PR_INC_FILES = settings.hpp
 
