@@ -9,7 +9,7 @@ class Enertech : public Cell
 {
 public:
   inline const real_t cn0() const override { return 24108.; }
-  inline const real_t cnmax() const override { return 29700; }
+  inline const real_t cnmax() const override { return 29700; } // PyBAMM uses 28700
   inline const real_t rn() const override { return 5e-6; }
   inline const real_t ln() const override { return 7.65e-5; }
   inline const real_t eps_n() const override { return 0.33; }
