@@ -4,10 +4,6 @@ Install PyBAMM with `pip install pybamm` and Matplotlib with `pip install matplo
 
 Choose what to plot by modifying script variables:
 ```
-PLOT_SPM   = True
-PLOT_SPMe  = True
-PLOT_P2D   = True
-
 PLOT_MFEM  = True
 PLOT_PYBAMM = True
 ```
@@ -17,4 +13,4 @@ Ensure variable defining the mfem executable is correct:
 mfem_executable = "./../batree"
 ```
 
-Note: Batree simulations seem to take quite a long time (approx 5 mins).  Not currently tested in parallel.
+Note: Batree simulations are still not fully optimised yet. Not currently tested in parallel.

@@ -1,4 +1,5 @@
 #include "cells/LGM50.hpp"
+#include "cells/Enertech.hpp"
 #include "mfem.hpp"
 
 using namespace mfem;
@@ -59,8 +60,9 @@ extern const unsigned NMACROC; // Number of Macro Concentration equations
 extern const unsigned NMACRO;  // Total Number of Macro Equations (Sum of the above two)
 extern const unsigned NEQS;    // Total Number of Equations in the System
 
-extern Cell * CELL;            // Chosen cell
-extern const LGM50 LGM50_CELL; // LGM50 cell
+extern Cell * CELL;                  // Chosen cell
+extern const LGM50 LGM50_CELL;       // LGM50 cell
+extern const Enertech Enertech_CELL; // Enertech cell
 
 // Dimensional constants
 extern const real_t F;     // Faraday constant, C/mol

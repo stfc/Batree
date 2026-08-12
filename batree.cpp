@@ -29,7 +29,7 @@ main(int argc, char * argv[])
 
   OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
-  args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50.");
+  args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50 or Enertech.");
   args.AddOption(&order, "-o", "--order", "Order (degree) of the finite elements.");
   args.AddOption(&ode_solver_type, "-s", "--ode-solver", ODESolver::Types.c_str());
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
