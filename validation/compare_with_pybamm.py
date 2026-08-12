@@ -6,10 +6,6 @@ import subprocess
 # Close all figures
 plt.close("all")
 
-# Plotting directory, make if it doesn't exist
-plots_dir = "./plots/"
-os.makedirs(plots_dir, exist_ok=True)
-
 mfem_executable = "./../batree"
 
 PLOT_MFEM  = True
@@ -94,4 +90,4 @@ for i, cell in enumerate(cells):
     ax.grid(True, which="major", linestyle="--", alpha=0.4)
     ax.legend(fontsize="small", loc="lower left")
 
-plt.savefig(os.path.join(plots_dir, "comparison.png"), dpi=300)
+plt.savefig("compared_with_pybamm.png", dpi=300)
