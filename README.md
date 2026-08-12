@@ -8,7 +8,8 @@ _Nuno Nobre, Karthikeyan Chockalingam, Daniel Ward and Olha Yaman, STFC Hartree 
 
 ###
 
-Compile with `make batree`.
+Set the `MFEM_INSTALL_DIR` environment variable to your MFEM's installation
+directory. Compile with `make`.
 
 Sample runs:
 ```
@@ -28,8 +29,8 @@ integration methods are supported at this time.
 
 Details on the formulation, including parametrisation, scaling and literature
 references can be found under [docs/](docs). Refer to [validation/](validation)
-for a simple script comparing the results of our implementation against PyBAMM,
-from which you can obtain the following figure:
+for a simple script comparing the results of our implementation against
+[PyBAMM](https://pybamm.org), from which you can obtain the following figure:
 
 ![Voltage curve comparison between Batree and PyBaMM](validation/compared_with_pybamm.png)
 
