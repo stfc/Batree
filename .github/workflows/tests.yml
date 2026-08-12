@@ -4,11 +4,12 @@ on: [pull_request, workflow_dispatch]
 
 jobs:
   Tests:
-    name: ${{ matrix.method }}, ${{ matrix.ranks }} rank(s), ${{ matrix.os }}
+    name: ${{ matrix.method }}, ${{ matrix.cell }}, ${{ matrix.ranks }} rank(s), ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         method: [SPM, SPMe, P2D]
+        cell: [LGM50, Enertech]
         ranks: [1, 2, 3]
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -39,5 +40,5 @@ jobs:
                            ./mfem/build/fetch/metis/lib/libmetis.a"
       - name: Run batree and perform diff with gold output
         run: |
-          diff <(mpirun -n ${{ matrix.ranks }} ./batree -m ${{ matrix.method }} | tail -n 721) \
-               .github/workflows/${{ matrix.method }}.txt
+          diff <(mpirun -n ${{ matrix.ranks }} ./batree -m ${{ matrix.method }} -c ${{ matrix.cell }} | tail -n 721) \
+               .github/workflows/${{ matrix.method }}_${{ matrix.cell }}.txt
