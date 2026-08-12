@@ -88,6 +88,7 @@ for i, cell in enumerate(cells):
         run_and_plot(ax, cell, sim_type, pybamm_model, colour)
     ax.set_title(cell)
     ax.set_xlim(0, 3600)
+    ax.set_xticks(range(0, 3601, 400))
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Voltage (V)")
     ax.grid(True, which="major", linestyle="--", alpha=0.4)
