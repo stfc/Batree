@@ -60,40 +60,39 @@ main(int argc, char * argv[])
   Mesh x_smesh = Mesh::MakeCartesian1D(NX);
   for (unsigned i = 0; i < NX; i++)
     x_smesh.SetAttribute(i, i < NNE ? NE : i < NNE + NSEP ? SEP : PE);
-  ParMesh * x_pmesh = new ParMesh(MPI_COMM_WORLD, x_smesh);
+  ParMesh x_pmesh(MPI_COMM_WORLD, x_smesh);
   x_smesh.Clear(); // the serial mesh is no longer needed
 
   // Build the 1d mesh for the micro problems, i.e. the particles.
   // Define the parallel mesh by a partitioning of the serial mesh.
   // Once the parallel mesh is defined, the serial mesh can be deleted.
   Mesh r_smesh = Mesh::MakeCartesian1D(NR);
-  ParMesh * r_pmesh = new ParMesh(MPI_COMM_WORLD, r_smesh);
+  ParMesh r_pmesh(MPI_COMM_WORLD, r_smesh);
   r_smesh.Clear(); // the serial mesh is no longer needed
 
   // Define the H1 finite element spaces representing concentrations/potentials
   H1_FECollection fe_coll(order, /*dim*/ 1);
-  ParFiniteElementSpace * x_h1space = new ParFiniteElementSpace(x_pmesh, &fe_coll);
-  ParFiniteElementSpace * r_h1space = new ParFiniteElementSpace(r_pmesh, &fe_coll);
+  ParFiniteElementSpace x_h1space(&x_pmesh, &fe_coll);
+  ParFiniteElementSpace r_h1space(&r_pmesh, &fe_coll);
 
   // Get the total number of dofs in the system (including boundaries), for
   // both the macro and micro problems, across all processors. This is for
   // reporting purposes only.
-  HYPRE_BigInt fe_size_global = NMACRO * x_h1space->GlobalTrueVSize() +
-                                NPAR * r_h1space->GlobalTrueVSize();
+  HYPRE_BigInt fe_size_global =
+      NMACRO * x_h1space.GlobalTrueVSize() + NPAR * r_h1space.GlobalTrueVSize();
 
   // Get the number of dofs in the system (including boundaries), for
   // both the macro and micro problems, _owned_ by this processor.
-  HYPRE_BigInt fe_size_owned = NMACRO * x_h1space->GetTrueVSize() +
-                               NPAR * r_h1space->GetTrueVSize();
+  HYPRE_BigInt fe_size_owned = NMACRO * x_h1space.GetTrueVSize() + NPAR * r_h1space.GetTrueVSize();
 
   if (Mpi::Root())
   {
     std::cout << std::endl;
     std::cout << "# vars: " << (SPM ? NPAR : SPMe ? NMACROC + NPAR : P2D ? NEQS : 0) << std::endl;
     std::cout << "# dofs (total): "
-              << fe_size_global - (SPMe ? NMACROP * x_h1space->GlobalTrueVSize() : 0) << std::endl;
+              << fe_size_global - (SPMe ? NMACROP * x_h1space.GlobalTrueVSize() : 0) << std::endl;
     std::cout << "# dofs (rank 0): "
-              << fe_size_owned - (SPMe ? NMACROP * x_h1space->GetTrueVSize() : 0) << std::endl;
+              << fe_size_owned - (SPMe ? NMACROP * x_h1space.GetTrueVSize() : 0) << std::endl;
     std::cout << std::endl;
   }
 
@@ -128,10 +127,6 @@ main(int argc, char * argv[])
       }
     }
   }
-
-  // Free the used memory.
-  delete x_pmesh;
-  delete r_pmesh;
 
   return 0;
 }

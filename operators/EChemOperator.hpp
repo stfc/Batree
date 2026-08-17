@@ -16,8 +16,8 @@ using namespace mfem;
 class EChemOperator : public TimeDependentOperator
 {
 protected:
-  ParFiniteElementSpace *& _x_h1space;
-  ParFiniteElementSpace *& _r_h1space;
+  ParFiniteElementSpace & _x_h1space;
+  ParFiniteElementSpace & _r_h1space;
   ParFiniteElementSpace * _x_l2space = nullptr;
 
   ElectrolytePotential * _ep = nullptr;
@@ -84,8 +84,8 @@ protected:
   const IntegrationRule * _scl_irs[Geometry::Type::NUM_GEOMETRIES];
 
 public:
-  EChemOperator(ParFiniteElementSpace *& x_h1space,
-                ParFiniteElementSpace * & r_h1space,
+  EChemOperator(ParFiniteElementSpace & x_h1space,
+                ParFiniteElementSpace & r_h1space,
                 const unsigned & ndofs,
                 BlockVector & x);
 
@@ -132,9 +132,6 @@ public:
   {
     if (_x_l2space)
       delete _x_l2space->FEColl();
-
-    delete _x_h1space;
-    delete _r_h1space;
     delete _x_l2space;
 
     delete _ep;
