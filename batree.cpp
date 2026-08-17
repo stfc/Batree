@@ -63,36 +63,28 @@ main(int argc, char * argv[])
   ParMesh * x_pmesh = new ParMesh(MPI_COMM_WORLD, x_smesh);
   x_smesh.Clear(); // the serial mesh is no longer needed
 
-  // Build one 1d mesh for each particle, i.e. for each of the micro problems.
-  // Define each parallel mesh by a partitioning of the respective serial mesh.
-  // Once each parallel mesh is defined, the respective serial mesh can be deleted.
-  Array<ParMesh *> r_pmesh(NPAR);
-  for (unsigned p = 0; p < NPAR; p++)
-  {
-    Mesh r_smesh = Mesh::MakeCartesian1D(NR);
-    r_pmesh[p] = new ParMesh(MPI_COMM_WORLD, r_smesh);
-    r_smesh.Clear(); // the serial mesh is no longer needed
-  }
+  // Build the 1d mesh for the micro problems, i.e. the particles.
+  // Define the parallel mesh by a partitioning of the serial mesh.
+  // Once the parallel mesh is defined, the serial mesh can be deleted.
+  Mesh r_smesh = Mesh::MakeCartesian1D(NR);
+  ParMesh * r_pmesh = new ParMesh(MPI_COMM_WORLD, r_smesh);
+  r_smesh.Clear(); // the serial mesh is no longer needed
 
   // Define the H1 finite element spaces representing concentrations/potentials
   H1_FECollection fe_coll(order, /*dim*/ 1);
   ParFiniteElementSpace * x_h1space = new ParFiniteElementSpace(x_pmesh, &fe_coll);
-  Array<ParFiniteElementSpace *> r_h1space(NPAR);
-  for (unsigned p = 0; p < NPAR; p++)
-    r_h1space[p] = new ParFiniteElementSpace(r_pmesh[p], &fe_coll);
+  ParFiniteElementSpace * r_h1space = new ParFiniteElementSpace(r_pmesh, &fe_coll);
 
   // Get the total number of dofs in the system (including boundaries), for
   // both the macro and micro problems, across all processors. This is for
   // reporting purposes only.
-  HYPRE_BigInt fe_size_global = NMACRO * x_h1space->GlobalTrueVSize();
-  for (unsigned p = 0; p < NPAR; p++)
-    fe_size_global += r_h1space[p]->GlobalTrueVSize();
+  HYPRE_BigInt fe_size_global = NMACRO * x_h1space->GlobalTrueVSize() +
+                                NPAR * r_h1space->GlobalTrueVSize();
 
   // Get the number of dofs in the system (including boundaries), for
   // both the macro and micro problems, _owned_ by this processor.
-  HYPRE_BigInt fe_size_owned = NMACRO * x_h1space->GetTrueVSize();
-  for (unsigned p = 0; p < NPAR; p++)
-    fe_size_owned += r_h1space[p]->GetTrueVSize();
+  HYPRE_BigInt fe_size_owned = NMACRO * x_h1space->GetTrueVSize() +
+                               NPAR * r_h1space->GetTrueVSize();
 
   if (Mpi::Root())
   {
@@ -139,8 +131,7 @@ main(int argc, char * argv[])
 
   // Free the used memory.
   delete x_pmesh;
-  for (unsigned p = 0; p < NPAR; p++)
-    delete r_pmesh[p];
+  delete r_pmesh;
 
   return 0;
 }

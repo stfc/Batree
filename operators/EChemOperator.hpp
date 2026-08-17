@@ -17,8 +17,8 @@ class EChemOperator : public TimeDependentOperator
 {
 protected:
   ParFiniteElementSpace *& _x_h1space;
+  ParFiniteElementSpace *& _r_h1space;
   ParFiniteElementSpace * _x_l2space = nullptr;
-  Array<ParFiniteElementSpace *> & _r_h1space;
 
   ElectrolytePotential * _ep = nullptr;
   SolidPotential * _sp = nullptr;
@@ -85,7 +85,7 @@ protected:
 
 public:
   EChemOperator(ParFiniteElementSpace *& x_h1space,
-                Array<ParFiniteElementSpace *> & r_h1space,
+                ParFiniteElementSpace * & r_h1space,
                 const unsigned & ndofs,
                 BlockVector & x);
 
@@ -134,9 +134,8 @@ public:
       delete _x_l2space->FEColl();
 
     delete _x_h1space;
+    delete _r_h1space;
     delete _x_l2space;
-    for (unsigned p = 0; p < NPAR; p++)
-      delete _r_h1space[p];
 
     delete _ep;
     delete _sp;

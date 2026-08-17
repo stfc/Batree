@@ -1,7 +1,7 @@
 #include "operators/EChemOperator.hpp"
 
 EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
-                             Array<ParFiniteElementSpace *> & r_h1space,
+                             ParFiniteElementSpace *& r_h1space,
                              const unsigned & ndofs,
                              BlockVector & x)
   : TimeDependentOperator(ndofs, (real_t)0.0),
@@ -42,8 +42,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
 
   for (unsigned p = 0; p < NPAR; p++)
   {
-    _block_trueOffsets[SC + 1 + p] = _r_h1space[p]->GetTrueVSize();
-    _concentration_trueOffsets[SCC + 1 + p] = _r_h1space[p]->GetTrueVSize();
+    _block_trueOffsets[SC + 1 + p] = _r_h1space->GetTrueVSize();
+    _concentration_trueOffsets[SCC + 1 + p] = _r_h1space->GetTrueVSize();
   }
 
   _block_trueOffsets.PartialSum();
@@ -74,8 +74,8 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
 
   if (SPM || SPMe)
   {
-    _sc.Append(new SolidConcentration(*_r_h1space[0], 0, 0, -1, NE));
-    _sc.Append(new SolidConcentration(*_r_h1space[1], 1, 0, -1, PE));
+    _sc.Append(new SolidConcentration(*_r_h1space, 0, 0, -1, NE));
+    _sc.Append(new SolidConcentration(*_r_h1space, 1, 0, -1, PE));
   }
   else
   {
@@ -93,7 +93,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace *& x_h1space,
       int dof = owned ? particle_dofs[p - offset] : -1;
       Region region = particle_regions[p];
 
-      _sc.Append(new SolidConcentration(*_r_h1space[p], p, rank, dof, region));
+      _sc.Append(new SolidConcentration(*_r_h1space, p, rank, dof, region));
     }
   }
 
