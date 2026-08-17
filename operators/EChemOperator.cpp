@@ -146,11 +146,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
     {
       // save previous iteration reaction current and its l2 norm
       j_gf.ProjectCoefficient(*_j);
-      j_norm = j_gf.Norml2();
-      // get the global l2 norm if in parallel
-      j_norm *= j_norm;
-      MPI_Allreduce(MPI_IN_PLACE, &j_norm, 1, MFEM_MPI_REAL_T, MPI_SUM, MPI_COMM_WORLD);
-      j_norm = sqrt(j_norm);
+      j_norm = GlobalLpNorm(2.0, j_gf.Norml2(), MPI_COMM_WORLD);
 
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
