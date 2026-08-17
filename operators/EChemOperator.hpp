@@ -145,7 +145,11 @@ public:
     delete _ocp;
     delete _op;
 
-    delete _Ac;
     delete _Ap;
+    delete _Ac;
+
+    for (int i = 0; i < _Bc.NumRows(); i++)
+      for (int j = 0; j < _Bc.NumCols(); j++)
+        delete _Bc(i, j);
   }
 };
