@@ -109,18 +109,6 @@ EChemOperator::EChemOperator(ParFiniteElementSpace & x_h1space,
     _x.GetBlock(SC + p) = _sc[p]->GetParticleRegion() == NE ? CN0 : CP0;
   SetConcentrationGridFunctionsFromTrueVectors();
   SetPotentialGridFunctionsFromTrueVectors();
-
-  if (P2D)
-  {
-    // Construct space for discontinuous functions like the reaction current j
-    _x_l2space = new ParFiniteElementSpace(_x_h1space.GetParMesh(),
-                                           new L2_FECollection(_scl_ir.GetNPoints() - 1, 1));
-
-    // Build special integration rule to be used only for self-consistency loop
-    for (int i = 0; i < _scl_ir.GetNPoints(); i++)
-      _scl_ir.IntPoint(i).weight = NX;
-    _scl_irs[Geometry::Type::SEGMENT] = &_scl_ir;
-  }
 }
 
 void
@@ -133,8 +121,8 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 
   if (P2D)
   {
-    ParGridFunction j_gf(_x_l2space);
-    real_t j_norm;
+    // for use within self-consistency loop
+    real_t j_norm, j_error;
 
     // force re-assembly of electrolyte potential lhs and rhs
     _ep->Reset();
@@ -142,11 +130,14 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
     // for performance only, since we get a better initial guess, no impact on final result
     SetReferencePotential();
 
+    // Initial reaction current projection
+    _j->Project(_j_qfunction);
+
     do
     {
       // save previous iteration reaction current and its l2 norm
-      j_gf.ProjectCoefficient(*_j);
-      j_norm = GlobalLpNorm(2.0, j_gf.Norml2(), MPI_COMM_WORLD);
+      _j_vec = _j_qfunction;
+      j_norm = GlobalLpNorm(2.0, _j_vec.Norml2(), MPI_COMM_WORLD);
 
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
@@ -164,7 +155,11 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
       _Solver.Mult(_bp, _xp);
 
       SetPotentialGridFunctionsFromTrueVectors();
-    } while (j_gf.ComputeL2Error(*_j, _scl_irs) > _scl_threshold * j_norm);
+
+      // update reaction current and compute its l2 error vs previous iteration
+      _j->Project(_j_qfunction);
+      j_error = GlobalLpNorm(2.0, (_j_vec -= _j_qfunction).Norml2(), MPI_COMM_WORLD);
+    } while (j_error > _scl_threshold * j_norm);
   }
 
   // assemble each individual block of _Ac and _bc

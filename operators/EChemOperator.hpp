@@ -18,7 +18,6 @@ class EChemOperator : public TimeDependentOperator
 protected:
   ParFiniteElementSpace & _x_h1space;
   ParFiniteElementSpace & _r_h1space;
-  ParFiniteElementSpace * _x_l2space = nullptr;
 
   ElectrolytePotential * _ep = nullptr;
   SolidPotential * _sp = nullptr;
@@ -81,7 +80,15 @@ protected:
 
   /// Self-consistency loop 4-point integration rule
   IntegrationRule _scl_ir = IntegrationRules().Get(Geometry::Type::SEGMENT, 7);
-  const IntegrationRule * _scl_irs[Geometry::Type::NUM_GEOMETRIES];
+
+  /// Self-consistency loop quadrature space
+  QuadratureSpace _scl_qspace = QuadratureSpace(*_x_h1space.GetParMesh(), _scl_ir);
+
+  /// Self-consistency loop quadrature function for the reaction current
+  QuadratureFunction _j_qfunction = QuadratureFunction(_scl_qspace);
+
+  /// Self-consistency loop quadrature function vector for the reaction current
+  Vector _j_vec = Vector(_j_qfunction.Size());
 
 public:
   EChemOperator(ParFiniteElementSpace & x_h1space,
@@ -130,10 +137,6 @@ public:
 
   virtual ~EChemOperator()
   {
-    if (_x_l2space)
-      delete _x_l2space->FEColl();
-    delete _x_l2space;
-
     delete _ep;
     delete _sp;
     delete _ec;
