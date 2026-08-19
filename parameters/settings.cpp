@@ -102,7 +102,7 @@ real_t EPS_S = 0;
 real_t TPLUS = 0;
 
 void
-init_settings(std::string m, std::string c, int order)
+init_settings(std::string m, std::string c, real_t c_rate, int order)
 {
   std::transform(m.begin(), m.end(), m.begin(), [](unsigned char c) { return std::tolower(c); });
 
@@ -195,6 +195,7 @@ init_settings(std::string m, std::string c, int order)
   SIGN = CELL->sig_n() / sig_scale;
 
   CE0 = CELL->ce0() / ce_scale;
+  I = c_rate;
 
   EPS_P = CELL->eps_p();
   EPS_N = CELL->eps_n();

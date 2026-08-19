@@ -166,5 +166,5 @@ Kappa(real_t ce)
   return CELL->kappa(ce * ce_scale) / kappa_scale;
 }
 
-void init_settings(std::string m, std::string c, int order);
+void init_settings(std::string m, std::string c, real_t c_rate, int order);
 }
