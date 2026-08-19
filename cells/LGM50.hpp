@@ -20,7 +20,7 @@ public:
   inline const real_t brugg_n() const override { return 1.5; }
   inline const real_t Un(real_t cs) const override
   {
-    return 1.97938 * exp(-39.3631 * cs) + 0.2482 - 0.0909 * tanh(29.8538 * (cs - 0.1234)) -
+    return 1.9793 * exp(-39.3631 * cs) + 0.2482 - 0.0909 * tanh(29.8538 * (cs - 0.1234)) -
            0.04478 * tanh(14.9159 * (cs - 0.2769)) - 0.0205 * tanh(30.4444 * (cs - 0.6103));
   }
 
