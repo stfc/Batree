@@ -490,11 +490,11 @@ EChemOperator::GetVoltageMarquisCorrection()
   QuadratureSpace x_qspace(_x_h1space.GetParMesh(), _x_h1space.FEColl()->GetOrder());
 
   ce_pwc.UpdateCoefficient(NE, _ec_gfc);
-  real_t ce_ne_int = x_qspace.Integrate(ce_pwc) * (NX / NNE);
+  real_t ce_ne_int = x_qspace.Integrate(ce_pwc) * NX / NNE;
   ce_pwc.ZeroCoefficient(NE);
 
   ce_pwc.UpdateCoefficient(PE, _ec_gfc);
-  real_t ce_pe_int = x_qspace.Integrate(ce_pwc) * (NX / NPE);
+  real_t ce_pe_int = x_qspace.Integrate(ce_pwc) * NX / NPE;
   ce_pwc.ZeroCoefficient(PE);
 
   real_t eta_c = (2.0 * T / CE0) * (1 - TPLUS) * (ce_ne_int - ce_pe_int);
