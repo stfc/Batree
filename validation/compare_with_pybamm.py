@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import pybamm
 import subprocess
 
@@ -74,7 +75,7 @@ models = [
     ("SPMe", pybamm.lithium_ion.SPMe(), ["#9e9ac8", "#6baed6", "#74c476"]),
     ("DFN",  pybamm.lithium_ion.DFN(),  ["#6a51a3", "#2171b5", "#238b45"]),
 ]
-c_rates = [".7", "1", "2"]
+c_rates = ["0.7", "1", "2"]
 
 fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharex=True, sharey=True, constrained_layout=True)
 
@@ -90,6 +91,35 @@ for i, cell in enumerate(cells):
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Voltage [V]")
     ax.grid(True, which="major", linestyle="--", alpha=0.4)
-    ax.legend(fontsize="small", loc="lower left")
 
-plt.savefig("compared_with_pybamm.png", dpi=300)
+method_legend = fig.legend(
+    handles=[
+        Line2D([], [], color="black", linewidth=1.3, marker=".", linestyle="None", label="Batree"),
+        Line2D([], [], color="black", linewidth=1.3, linestyle="-", label="PyBaMM"),
+    ],
+    title="Implementation",
+    loc="upper left",
+    bbox_to_anchor=(1.01, 0.90),
+)
+
+rate_legend = fig.legend(
+    handles=[
+        Line2D([], [], color=colour, linewidth=1.3, label=f"{c_rate}C")
+        for c_rate, colour in zip(c_rates, ["#6a51a3", "#2171b5", "#238b45"])
+    ],
+    title="Discharge rate",
+    loc="upper left",
+    bbox_to_anchor=(1.01, 0.75),
+)
+
+model_legend = fig.legend(
+    handles=[
+        Line2D([], [], color=colour, linewidth=1.3, label=sim_type)
+        for (sim_type, _, _), colour in zip(models, ["#cccccc", "#969696", "#525252"])
+    ],
+    title="Model",
+    loc="upper left",
+    bbox_to_anchor=(1.01, 0.55),
+)
+
+plt.savefig("compared_with_pybamm.png", dpi=300, bbox_inches="tight")
