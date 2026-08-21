@@ -19,13 +19,13 @@ mpirun -np 4 ./batree -m P2D
 ```
 
 Under active development. Use `-m` or `--method` to select from the three
-electrochemical models (`SPM`, `SPMe` or `P2D`) and `-c` or `--cell`
-to select from the two available cells (`LGM50` for the LG INR 21700 M50
-cylindrical cell[^1] or `Enertech` for the Enertech LCO-G SPB655060 pouch
-cell[^2]). At the moment, the program will only perform a single 1C discharge
-cycle until the time specified with `-tf` or `--t-final` (3600s by default).
-Run with `-h` or `--help` for all available options. No explicit time
-integration methods are supported at this time.
+electrochemical models (`SPM`, `SPMe` or `P2D`), `-c` or `--cell` to select
+from the two available cells (`LGM50` for the LG INR 21700 M50 cylindrical
+cell[^1] or `Enertech` for the Enertech LCO-G SPB655060 pouch cell[^2]), `-cr`
+or `--c-rate` for the C-rate at which you would like to run a constant current
+discharge, and `-tf` or `--t-final` to select the cycle duration.
+Run with `-h` or `--help` for all available options and defaults. No explicit
+time integration methods are supported at this time.
 
 Details on the formulation, including parametrisation, scaling and literature
 references can be found under [docs/](docs). Refer to [validation/](validation)
