@@ -6,9 +6,9 @@ import subprocess
 # Close all figures
 plt.close("all")
 
-mfem_executable = "./../batree"
+batree_executable = "./../batree"
 
-PLOT_MFEM  = True
+PLOT_BATREE = True
 PLOT_PYBAMM = True
 
 # Standard plot settings for all plots.
@@ -27,7 +27,7 @@ def easyplot(ax, x, y, colour, linestyle, label, marker_indx = 1):
 def run_batree(sim_type, cell, c_rate):
 
     print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.ljust(8) + " | " + c_rate + "C")
-    cmd = [mfem_executable, "-m", sim_type, "-c", cell, "-cr", c_rate, "-tf", str(3600 / float(c_rate))]
+    cmd = [batree_executable, "-m", sim_type, "-c", cell, "-cr", c_rate, "-tf", str(3600 / float(c_rate))]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     times = []
@@ -60,7 +60,7 @@ def run_pybamm(model, cell, c_rate):
 # Running simulations and plotting results.
 def run_and_plot(ax, sim_type, pybamm_model, cell, c_rate, colour):
 
-    if PLOT_MFEM:
+    if PLOT_BATREE:
         time, voltage = run_batree(sim_type, cell, c_rate)
         easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 20)
 
