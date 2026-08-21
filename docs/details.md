@@ -226,6 +226,9 @@ $$
 U_{\mathrm{eq}} = U_{\mathrm{p}}\left(\left.c_{\mathrm{p}}\right|_{r=R_{\mathrm{p}}}\right)-U_{\mathrm{n}}\left(\left.c_{\mathrm{n}}\right|_{r=R_{\mathrm{n}}}\right).
 $$
 
+Note that our implementation has been updated to use the logarithm of the ratio of the average electrolyte concentration in both electrodes for the concentration overpotential
+and that the electrolyte ohmic loss now uses the average, not the initial, electrolyte concentration to evaluate the electrolyte conductivity.
+
 ## P2D model
 
 We do not currently solve for concentration, potentials and exchange current density in the same monolotical system.

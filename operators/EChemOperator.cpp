@@ -490,15 +490,26 @@ EChemOperator::GetVoltageMarquisCorrection()
   QuadratureSpace x_qspace(_x_h1space.GetParMesh(), _x_h1space.FEColl()->GetOrder());
 
   ce_pwc.UpdateCoefficient(NE, _ec_gfc);
-  real_t ce_ne_int = x_qspace.Integrate(ce_pwc) * NX / NNE;
+  real_t ce_ne_int = x_qspace.Integrate(ce_pwc);
   ce_pwc.ZeroCoefficient(NE);
 
   ce_pwc.UpdateCoefficient(PE, _ec_gfc);
-  real_t ce_pe_int = x_qspace.Integrate(ce_pwc) * NX / NPE;
+  real_t ce_pe_int = x_qspace.Integrate(ce_pwc);
   ce_pwc.ZeroCoefficient(PE);
 
-  real_t eta_c = (2.0 * T / CE0) * (1 - TPLUS) * (ce_ne_int - ce_pe_int);
-  real_t dphie = (I / Kappa(CE0)) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
+  ce_pwc.UpdateCoefficient(SEP, _ec_gfc);
+  real_t ce_sep_int = x_qspace.Integrate(ce_pwc);
+  ce_pwc.ZeroCoefficient(SEP);
+
+  // Negative electrode, positive electrode and whole-cell x-averaged electrolyte concentration
+  real_t ce_ne_avg = ce_ne_int * NX / NNE;
+  real_t ce_pe_avg = ce_pe_int * NX / NPE;
+  real_t ce_av = ce_ne_int + ce_sep_int + ce_pe_int;
+
+  // MacInnes concentration overpotential uses log(c_e), not a linear approximation
+  real_t eta_c = 2.0 * T * (1 - TPLUS) * log(ce_ne_avg / ce_pe_avg);
+  // We also use the average, not the initial, electrolyte concentration
+  real_t dphie = I / Kappa(ce_av) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
   real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;

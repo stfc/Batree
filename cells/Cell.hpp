@@ -78,7 +78,7 @@ public:
   virtual inline const real_t ce0() const = 0;
   // Diffusivity of Li ions in the electrolyte [m^2/s]
   virtual inline const real_t De(real_t) const = 0;
-  // Electronic conductivity [S/m]
+  // Electrolyte conductivity [S/m]
   virtual inline const real_t kappa(real_t) const = 0;
 
   /// Geometric parameters ///
