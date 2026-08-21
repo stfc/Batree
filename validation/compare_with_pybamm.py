@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import os
 import pybamm
 import subprocess
 
@@ -24,9 +23,9 @@ def easyplot(ax, x, y, colour, linestyle, label, marker_indx = 1):
     )
 
 # Function to run Batree and extract results from output.
-def run_batree(mfem_executable, sim_type, cell):
+def run_batree(sim_type, cell):
 
-    print("Running " + sim_type + " simulation in Batree for cell " + cell + "...")
+    print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.ljust(8))
     cmd = [mfem_executable, "-m", sim_type, "-c", cell]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -47,7 +46,7 @@ def run_batree(mfem_executable, sim_type, cell):
 # Function to run PyBAMM and extract results from output.
 def run_pybamm(model, cell):
 
-    print("Running " + str(model.__class__.__name__) + " simulation in PyBaMM for cell " + cell + "...")
+    print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.ljust(8))
     solver = pybamm.IDAKLUSolver(options={"dt_max" : 1})
     sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), solver=solver)
     soln = sim.solve([0, 3600])
@@ -61,7 +60,7 @@ def run_pybamm(model, cell):
 def run_and_plot(ax, cell, sim_type, pybamm_model, colour):
 
     if PLOT_MFEM:
-        time, voltage = run_batree(mfem_executable, sim_type, cell)
+        time, voltage = run_batree(sim_type, cell)
         easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 10)
 
     if PLOT_PYBAMM:
@@ -71,9 +70,9 @@ def run_and_plot(ax, cell, sim_type, pybamm_model, colour):
 
 cells = ["Chen2020", "Ai2020"]
 simulations = [
-    ("SPM", pybamm.lithium_ion.SPM(), (197 / 255, 27 / 255, 138 / 255)),
-    ("SPMe", pybamm.lithium_ion.SPMe(), (44 / 255, 127 / 255, 184 / 255)),
-    ("P2D", pybamm.lithium_ion.DFN(), (49 / 255, 163 / 255, 84 / 255)),
+    ("SPM",  pybamm.lithium_ion.SPM(),  (197 / 255,  27 / 255, 138 / 255)),
+    ("SPMe", pybamm.lithium_ion.SPMe(), ( 44 / 255, 127 / 255, 184 / 255)),
+    ("DFN",  pybamm.lithium_ion.DFN(),  ( 49 / 255, 163 / 255,  84 / 255)),
 ]
 
 fig, axs = plt.subplots(1, 2, figsize=(14, 6), sharex=True, sharey=True, constrained_layout=True)
