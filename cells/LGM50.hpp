@@ -60,4 +60,7 @@ public:
   inline const real_t wlayer() const override { return 6.5e-2; }
 
   inline const real_t I_typ() const override { return 5.0; }
+
+  inline const real_t lvoff() const override { return 2.5; }
+  inline const real_t uvoff() const override { return 4.2; }
 };
