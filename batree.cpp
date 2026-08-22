@@ -108,16 +108,17 @@ main(int argc, char * argv[])
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
   {
-    last_step = t + dt >= t_final - dt / 2;
-
     ode_solver->Step(x, t, dt);
+    real_t V = oper.GetVoltage();
 
+    last_step = t + 3 * dt / 2 >= t_final || V <= CELL->lvoff() || V >= CELL->uvoff();
+
+    // Print the time, voltage and SoC to the screen
     if (output_steps && ti == 1 && Mpi::Root())
       std::cout << "step\ttime[s]\tvoltage[V]\tSoC[%]" << std::endl;
 
     if (output_steps && (last_step || (ti % output_steps) == 0))
     {
-      real_t V = oper.GetVoltage();
       real_t SoC = oper.GetSoC();
       if (Mpi::Root())
       {
