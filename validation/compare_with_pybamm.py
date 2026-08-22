@@ -26,8 +26,8 @@ def easyplot(ax, x, y, colour, linestyle, label, marker_indx = 1):
 # Function to run Batree and extract results from output.
 def run_batree(sim_type, cell, c_rate):
 
-    print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.ljust(8) + " | " + c_rate + "C")
-    cmd = [batree_executable, "-m", sim_type, "-c", cell, "-cr", c_rate, "-tf", str(3600 / float(c_rate))]
+    print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.rjust(8) + " | " + c_rate.rjust(4) + "C")
+    cmd = [batree_executable, "-m", sim_type, "-c", cell, "-cr", c_rate]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     times = []
@@ -47,10 +47,10 @@ def run_batree(sim_type, cell, c_rate):
 # Function to run PyBAMM and extract results from output.
 def run_pybamm(model, cell, c_rate):
 
-    print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.ljust(8) + " | " + c_rate + "C")
+    print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.rjust(8) + " | " + c_rate.rjust(4) + "C")
     solver = pybamm.IDAKLUSolver(options={"dt_max" : 1})
     sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), C_rate=float(c_rate), solver=solver)
-    soln = sim.solve([0, 3600 / float(c_rate)])
+    soln = sim.solve([0, 10000])
 
     time = soln["Time [s]"].entries
     voltage = soln["Voltage [V]"].entries
@@ -62,7 +62,7 @@ def run_and_plot(ax, sim_type, pybamm_model, cell, c_rate, colour):
 
     if PLOT_BATREE:
         time, voltage = run_batree(sim_type, cell, c_rate)
-        easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 20)
+        easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 15)
 
     if PLOT_PYBAMM:
         time, voltage = run_pybamm(pybamm_model, cell, c_rate)
@@ -85,9 +85,9 @@ for i, cell in enumerate(cells):
         for colour, c_rate in zip(colours, c_rates):
             run_and_plot(ax, sim_type, pybamm_model, cell, c_rate, colour)
     ax.set_title(cell)
-    ax.set_xlim(0, 5400)
+    ax.set_xlim(0, 5500)
     ax.set_ylim(2.4, 4.2)
-    ax.set_xticks(range(0, 5401, 600))
+    ax.set_xticks(range(0, 5501, 500))
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Voltage [V]")
     ax.grid(True, which="major", linestyle="--", alpha=0.4)
@@ -99,7 +99,7 @@ method_legend = fig.legend(
     ],
     title="Implementation",
     loc="upper left",
-    bbox_to_anchor=(1.01, 0.90),
+    bbox_to_anchor=(1, 0.90),
 )
 
 rate_legend = fig.legend(
@@ -109,7 +109,7 @@ rate_legend = fig.legend(
     ],
     title="Discharge rate",
     loc="upper left",
-    bbox_to_anchor=(1.01, 0.75),
+    bbox_to_anchor=(1, 0.742),
 )
 
 model_legend = fig.legend(
@@ -119,7 +119,7 @@ model_legend = fig.legend(
     ],
     title="Model",
     loc="upper left",
-    bbox_to_anchor=(1.01, 0.55),
+    bbox_to_anchor=(1, 0.55),
 )
 
 plt.savefig("compared_with_pybamm.png", dpi=300, bbox_inches="tight")
