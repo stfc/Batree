@@ -21,7 +21,7 @@ main(int argc, char * argv[])
   real_t c_rate = 1;
   int order = 1;
   int ode_solver_type = 21;
-  real_t t_final = 3600.0;
+  real_t t_final = -1.0;
   real_t dt = 1.0;
   int output_steps = 5;
 
@@ -111,7 +111,7 @@ main(int argc, char * argv[])
     ode_solver->Step(x, t, dt);
     real_t V = oper.GetVoltage();
 
-    last_step = t + 3 * dt / 2 >= t_final || V <= CELL->lvoff() || V >= CELL->uvoff();
+    last_step = (t_final >= 0 && t + dt / 2 >= t_final) || V <= CELL->lvoff() || V >= CELL->uvoff();
 
     // Print the time, voltage and SoC to the screen
     if (output_steps && ti == 1 && Mpi::Root())
