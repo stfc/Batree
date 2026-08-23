@@ -23,9 +23,9 @@ electrochemical models (`SPM`, `SPMe` or `P2D`), `-c` or `--cell` to select
 from the two available cells (`LGM50` for the LG INR 21700 M50 cylindrical
 cell[^1] or `Enertech` for the Enertech LCO-G SPB655060 pouch cell[^2]), `-cr`
 or `--c-rate` for the C-rate at which you would like to run a constant current
-discharge, and `-tf` or `--t-final` to select the cycle duration.
-Run with `-h` or `--help` for all available options and defaults. No explicit
-time integration methods are supported at this time.
+discharge, and `-tf` or `--t-final` to interrupt the simulation before the
+voltage cut-off is met. Run with `-h` or `--help` for all available options and
+defaults. No explicit time integration methods are supported at this time.
 
 Details on the formulation, including parametrisation, scaling and literature
 references can be found under [docs/](docs). Refer to [validation/](validation)

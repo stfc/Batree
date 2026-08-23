@@ -93,4 +93,9 @@ public:
 
   // Or I1C in Jubat. Reference total current [A]
   virtual inline const real_t I_typ() const = 0;
+
+  // Lower voltage cut-off [V]
+  virtual inline const real_t lvoff() const = 0;
+  // Upper voltage cut-off [V]
+  virtual inline const real_t uvoff() const = 0;
 };

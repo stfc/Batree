@@ -40,5 +40,6 @@ jobs:
                            ./mfem/build/fetch/metis/lib/libmetis.a"
       - name: Run batree and perform diff with gold output
         run: |
-          diff <(mpirun -n ${{ matrix.ranks }} ./batree -m ${{ matrix.method }} -c ${{ matrix.cell }} | tail -n 721) \
+          diff <(mpirun -n ${{ matrix.ranks }} ./batree -m ${{ matrix.method }} -c ${{ matrix.cell }} | \
+          awk '/^step[[:space:]]+time\[s\][[:space:]]+voltage\[V\][[:space:]]+SoC\[%\]$/ {found=1} found') \
                .github/workflows/${{ matrix.method }}_${{ matrix.cell }}.txt

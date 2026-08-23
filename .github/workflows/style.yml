@@ -10,7 +10,19 @@ jobs:
       - name: Checkout batree
         uses: actions/checkout@v6
       - name: Check codebase
-        uses: harupy/find-trailing-whitespace@v1.0
+        shell: bash
+        run: |
+          trailing_whitespace="$(
+            for file in $(git ls-files); do
+              egrep -rnIH ' +$' "$file" || true
+            done
+          )"
+
+          if [[ -n "$trailing_whitespace" ]]; then
+            echo "Lines containing trailing whitespace:"
+            echo "$trailing_whitespace"
+            exit 1
+          fi
   Format:
     name: Clang format
     runs-on: ubuntu-latest
