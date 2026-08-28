@@ -24,6 +24,7 @@ unsigned NMACROP = 2;
 unsigned NMACROC = 1;
 unsigned NMACRO = NMACROP + NMACROC;
 unsigned NEQS = 0;
+unsigned NMSMDEQS = 4;
 
 Cell * CELL = nullptr;
 LGM50 LGM50_CELL = LGM50();

@@ -59,6 +59,7 @@ extern const unsigned NMACROP; // Number of Macro Potential equations //later ch
 extern const unsigned NMACROC; // Number of Macro Concentration equations
 extern const unsigned NMACRO;  // Total Number of Macro Equations (Sum of the above two)
 extern const unsigned NEQS;    // Total Number of Equations in the System
+extern const unsigned NMSMDEQS;    // Total Number of MSMD Equations in the System
 
 extern Cell * CELL;                  // Chosen cell
 extern const LGM50 LGM50_CELL;       // LGM50 cell
