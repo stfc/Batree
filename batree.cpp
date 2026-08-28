@@ -106,7 +106,7 @@ main(int argc, char * argv[])
   oper.SetImplicitVariableType(TimeDependentOperator::STATE);
   ode_solver->Init(oper);
 
-  Mesh current_collector_mesh("/home/HCHPSE01/nxn02/kxc07-nxn02/Batree/mesh/rectangle_current_collector.msh", 1, 0);
+  Mesh current_collector_mesh("../mesh/rectangle_current_collector.msh", 1, 0);
   ParMesh * c_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_mesh);
 
   ParFiniteElementSpace * collector_h1space;
@@ -126,8 +126,17 @@ main(int argc, char * argv[])
       collector_h1space->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
 
+   //Number of elements in the domain (without tab)
+  unsigned NDOMAIN = 0;
+  for (int elem = 0; elem < collector_h1space->GetParMesh()->GetNE(); elem++)
+    if (collector_h1space->GetAttribute(elem) == 1)
+      NDOMAIN += 1;
+  
+  HYPRE_BigInt fe_msmd_size_owned = 2.0 * collector_h1space->GetTrueVSize() + NDOMAIN + 1.0;
+  // The last one is for the scaler dof for the reference potential 
+
   mfem::BlockVector y;
-  CurrentCollectorOperator current_oper(collector_h1space, y, ess_tdof_list);
+  CurrentCollectorOperator current_oper(collector_h1space, fe_msmd_size_owned, NDOMAIN, y, ess_tdof_list);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
