@@ -22,8 +22,16 @@ protected:
 
    mutable Vector b; // auxiliary vector
 
+   const unsigned & np2ds;
+
+   /// For solution true vector (4 MSMD equations)
+   Array<int> _block_trueOffsets;
+
+   /// Reference to solution true dof vector
+   BlockVector & _x;
+
 public:
-   CurrentCollectorOperator(ParFiniteElementSpace * &f, BlockVector & x, const Array<int> &etl);
+   CurrentCollectorOperator(ParFiniteElementSpace * &f, const unsigned & ndofs, const unsigned & np2ds, BlockVector & x, const Array<int> &etl);
 
    virtual void Mult(const Vector & x, Vector &y) const;
 
