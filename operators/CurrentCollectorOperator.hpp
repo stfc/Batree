@@ -8,8 +8,9 @@ using namespace mfem;
 class CurrentCollectorOperator : public Operator
 {
 protected:
-   ParFiniteElementSpace &fespace;
-   Array<int> ess_tdof_list; // this list remains empty for pure Neumann b.c.
+   ParFiniteElementSpace &h1_fespace_current_collector_positive;
+   ParFiniteElementSpace &h1_fespace_current_collector_negative;
+   ParFiniteElementSpace &l2_fespace_currents;
 
    HypreParMatrix *T; // T = M + dt K
    real_t current_dt;
@@ -22,16 +23,16 @@ protected:
 
    mutable Vector b; // auxiliary vector
 
-   const unsigned & np2ds;
-
    /// For solution true vector (4 MSMD equations)
    Array<int> _block_trueOffsets;
+
+   Array2D<const HypreParMatrix *> _Bc{4, 4};
 
    /// Reference to solution true dof vector
    BlockVector & _x;
 
 public:
-   CurrentCollectorOperator(ParFiniteElementSpace * &f, const unsigned & ndofs, const unsigned & np2ds, BlockVector & x, const Array<int> &etl);
+   CurrentCollectorOperator(ParFiniteElementSpace * &f_pos, ParFiniteElementSpace * &f_neg, ParFiniteElementSpace * &f_l2, const unsigned & ndofs, BlockVector & x);
 
    virtual void Mult(const Vector & x, Vector &y) const;
 
