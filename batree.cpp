@@ -106,37 +106,53 @@ main(int argc, char * argv[])
   oper.SetImplicitVariableType(TimeDependentOperator::STATE);
   ode_solver->Init(oper);
 
-  Mesh current_collector_mesh("../mesh/rectangle_current_collector.msh", 1, 0);
-  ParMesh * c_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_mesh);
+  //Collector positive potentials (pp)
+  Mesh current_collector_positive_mesh("../mesh/rectangle_current_collector_pos.msh", 1, 0);
+  ParMesh * pp_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_positive_mesh);
 
-  ParFiniteElementSpace * collector_h1space;
-  collector_h1space = new ParFiniteElementSpace(c_pmesh, &fe_coll);
+  // Define the H1 finite element spaces representing potentials in the positive current collector
+  H1_FECollection fe_current_collector_positive_coll(order, pp_pmesh->Dimension());
 
-  Array<int> ess_tdof_list;
+  // Create FiniteElementSpace for the positive current collector
+  ParFiniteElementSpace * current_collector_positive_h1space;
+  current_collector_positive_h1space = new ParFiniteElementSpace(pp_pmesh, &fe_current_collector_positive_coll);
 
-   if (c_pmesh->bdr_attributes.Size())
-   {
-      Array<int> ess_bdr(c_pmesh->bdr_attributes.Max());
-      ess_bdr = 0;
-      // Apply boundary conditions on all external boundaries:
-      c_pmesh->MarkExternalBoundaries(ess_bdr);
-      // Boundary conditions can also be applied based on named attributes:
-      // mesh.MarkNamedBoundaries(set_name, ess_bdr)
+  //Collector negative potentials (np)
+  Mesh current_collector_negative_mesh("../mesh/rectangle_current_collector_neg.msh", 1, 0);
+  ParMesh * np_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_negative_mesh);
 
-      collector_h1space->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
-   }
+  // Define the H1 finite element spaces representing potentials in the negative current collector
+  H1_FECollection fe_current_collector_negative_coll(order, np_pmesh->Dimension());
 
-   //Number of elements in the domain (without tab)
-  unsigned NDOMAIN = 0;
-  for (int elem = 0; elem < collector_h1space->GetParMesh()->GetNE(); elem++)
-    if (collector_h1space->GetAttribute(elem) == 1)
-      NDOMAIN += 1;
+  // Create FiniteElementSpace for the negative current collector
+  ParFiniteElementSpace * current_collector_negative_h1space;
+  current_collector_negative_h1space = new ParFiniteElementSpace(np_pmesh, &fe_current_collector_negative_coll);
+
+  //This is the domain attribute (without tab) for the positive/negative current collector
+  mfem::Array<int> domain_attributes;
+  domain_attributes.Append(1); 
+
+  // domain currents mesh
+  ParSubMesh dc_pmesh_currents(
+    ParSubMesh::CreateFromDomain(*pp_pmesh, domain_attributes)
+  );
+
+  // Define the L2 finite element spaces representing currents in the positive/negative current collector
+  L2_FECollection l2_fe_coll(0, dc_pmesh_currents.Dimension());
+
+  // Create FiniteElementSpace for currents in the positive/negative current collector
+  ParFiniteElementSpace * current_l2space;
+  current_l2space = new ParFiniteElementSpace(&dc_pmesh_currents, &l2_fe_coll);
   
-  HYPRE_BigInt fe_msmd_size_owned = 2.0 * collector_h1space->GetTrueVSize() + NDOMAIN + 1.0;
+  HYPRE_BigInt fe_msmd_size_owned = 
+  current_collector_positive_h1space->GetTrueVSize() + 
+  current_collector_negative_h1space->GetTrueVSize() + 
+  current_l2space->GetTrueVSize() + 
+  1;
   // The last one is for the scaler dof for the reference potential 
 
   mfem::BlockVector y;
-  CurrentCollectorOperator current_oper(collector_h1space, fe_msmd_size_owned, NDOMAIN, y, ess_tdof_list);
+  CurrentCollectorOperator current_oper(current_collector_positive_h1space, current_collector_negative_h1space, current_l2space, fe_msmd_size_owned, y);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
