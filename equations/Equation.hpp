@@ -1,36 +1,34 @@
 #pragma once
 
-#include "mfem.hpp"
 #include "parameters/settings.hpp"
 
-using namespace mfem;
 using namespace settings;
 
 class Equation
 {
 protected:
-  ParFiniteElementSpace & fespace;
+  mfem::ParFiniteElementSpace & fespace;
 
-  Array<int> ess_tdof_list; // this list remains empty for pure Neumann b.c.
+  mfem::Array<int> ess_tdof_list; // this list remains empty for pure Neumann b.c.
 
-  ParBilinearForm * M = nullptr;
-  ParBilinearForm * K = nullptr;
-  ParLinearForm * Q = nullptr;
+  mfem::ParBilinearForm * M = nullptr;
+  mfem::ParBilinearForm * K = nullptr;
+  mfem::ParLinearForm * Q = nullptr;
 
-  HypreParMatrix Mmat;
-  HypreParMatrix Kmat;
+  mfem::HypreParMatrix Mmat;
+  mfem::HypreParMatrix Kmat;
 
-  Vector b; // auxiliary vector
+  mfem::Vector b; // auxiliary vector
 
 public:
-  Equation(ParFiniteElementSpace & f) : fespace(f), b(f.GetTrueVSize()) {};
+  Equation(mfem::ParFiniteElementSpace & f) : fespace(f), b(f.GetTrueVSize()) {};
 
-  const HypreParMatrix & GetM() const { return Mmat; };
-  const HypreParMatrix & GetK() const { return Kmat; };
-  const Vector & GetZ() const { return b; };
+  const mfem::HypreParMatrix & GetM() const { return Mmat; };
+  const mfem::HypreParMatrix & GetK() const { return Kmat; };
+  const mfem::Vector & GetZ() const { return b; };
 
-  virtual void Update(const Coefficient & j) {}
-  virtual void Update(const GridFunctionCoefficient & u, const Coefficient & j) {}
+  virtual void Update(const mfem::Coefficient & j) {}
+  virtual void Update(const mfem::GridFunctionCoefficient & u, const mfem::Coefficient & j) {}
 
   virtual ~Equation()
   {

@@ -1,8 +1,6 @@
+#include "mfem.hpp"
 #include "cells/LGM50.hpp"
 #include "cells/Enertech.hpp"
-#include "mfem.hpp"
-
-using namespace mfem;
 
 namespace settings
 {
@@ -29,80 +27,80 @@ Cell * CELL = nullptr;
 LGM50 LGM50_CELL = LGM50();
 Enertech Enertech_CELL = Enertech();
 
-real_t F = 96485.33289;
-real_t R = 8.314;
-real_t T_ref = 298.15;
+mfem::real_t F = 96485.33289;
+mfem::real_t R = 8.314;
+mfem::real_t T_ref = 298.15;
 
-real_t t0 = 1.0;
-real_t r0 = 1e-6;
-real_t L = 0;
+mfem::real_t t0 = 1.0;
+mfem::real_t r0 = 1e-6;
+mfem::real_t L = 0;
 
-real_t LNE = 0;
-real_t LSEP = 0;
-real_t LPE = 0;
+mfem::real_t LNE = 0;
+mfem::real_t LSEP = 0;
+mfem::real_t LPE = 0;
 
-real_t a0 = 0;
+mfem::real_t a0 = 0;
 
-real_t tn = 0;
-real_t tp = 0;
+mfem::real_t tn = 0;
+mfem::real_t tp = 0;
 
-real_t te = 0;
+mfem::real_t te = 0;
 
-real_t te_scale = 0;
+mfem::real_t te_scale = 0;
 
-real_t Dn_scale = 0;
-real_t Dp_scale = 0;
-real_t De_scale = 0;
+mfem::real_t Dn_scale = 0;
+mfem::real_t Dp_scale = 0;
+mfem::real_t De_scale = 0;
 
-real_t BPE = 0;
-real_t BNE = 0;
-real_t BSEP = 0;
+mfem::real_t BPE = 0;
+mfem::real_t BNE = 0;
+mfem::real_t BSEP = 0;
 
-real_t j_scale = 0;
+mfem::real_t j_scale = 0;
 
-real_t kn_scale = 0;
-real_t kp_scale = 0;
+mfem::real_t kn_scale = 0;
+mfem::real_t kp_scale = 0;
 
-real_t phi_scale = T_ref * R / F;
+mfem::real_t phi_scale = T_ref * R / F;
 
-real_t tn_scale = 0;
-real_t tp_scale = 0;
+mfem::real_t tn_scale = 0;
+mfem::real_t tp_scale = 0;
 
-real_t ce_scale = 0;
+mfem::real_t ce_scale = 0;
 
-real_t sig_scale = 0;
-real_t kappa_scale = 0;
+mfem::real_t sig_scale = 0;
+mfem::real_t kappa_scale = 0;
 
-real_t DN = 0;
-real_t DP = 0;
+mfem::real_t DN = 0;
+mfem::real_t DP = 0;
 
-real_t AN = 0;
-real_t AP = 0;
+mfem::real_t AN = 0;
+mfem::real_t AP = 0;
 
-real_t KN = 0;
-real_t KP = 0;
+mfem::real_t KN = 0;
+mfem::real_t KP = 0;
 
-real_t CN0 = 0;
-real_t CP0 = 0;
+mfem::real_t CN0 = 0;
+mfem::real_t CP0 = 0;
 
-real_t RN = 0;
-real_t RP = 0;
+mfem::real_t RN = 0;
+mfem::real_t RP = 0;
 
-real_t SIGP = 0;
-real_t SIGN = 0;
+mfem::real_t SIGP = 0;
+mfem::real_t SIGN = 0;
 
-real_t CE0 = 0;
-real_t I = 1.;
-real_t T = 1.0;
+mfem::real_t CE0 = 0;
+mfem::real_t I = 1.;
+mfem::real_t T = 1.0;
 
-real_t EPS_P = 0;
-real_t EPS_N = 0;
-real_t EPS_S = 0;
+mfem::real_t EPS_P = 0;
+mfem::real_t EPS_N = 0;
+mfem::real_t EPS_S = 0;
 
-real_t TPLUS = 0;
+mfem::real_t TPLUS = 0;
 
 void
-init_settings(std::string m, std::string c, real_t c_rate, int order)
+init_settings(std::string m, std::string c, mfem::real_t c_rate, int order)
 {
   std::transform(m.begin(), m.end(), m.begin(), [](unsigned char c) { return std::tolower(c); });
 
@@ -113,7 +111,7 @@ init_settings(std::string m, std::string c, real_t c_rate, int order)
   else if (m == "p2d" || m == "dfn")
     P2D = true;
   else
-    mfem_error("Unrecognised model.");
+    mfem::mfem_error("Unrecognised model.");
 
   std::transform(c.begin(), c.end(), c.begin(), [](unsigned char c) { return std::tolower(c); });
 
@@ -122,7 +120,7 @@ init_settings(std::string m, std::string c, real_t c_rate, int order)
   else if (c == "enertech" || c == "ai2020")
     CELL = &Enertech_CELL;
   else
-    mfem_error("Unrecognised cell name.");
+    mfem::mfem_error("Unrecognised cell name.");
 
   if (SPM)
     NNE = NSEP = NPE = 0;

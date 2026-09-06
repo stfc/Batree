@@ -1,13 +1,10 @@
-#include "mfem.hpp"
-using namespace mfem;
-
-class ElectrodeReactionCurrentCoefficient : public Coefficient
+class ElectrodeReactionCurrentCoefficient : public mfem::Coefficient
 {
 private:
   ExchangeCurrentCoefficient * _jex = nullptr;
   OverPotentialCoefficient * _op = nullptr;
 
-  const real_t _a;
+  const mfem::real_t _a;
   const Region _r;
   const int _sign;
 
@@ -28,7 +25,8 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
+  virtual mfem::real_t Eval(mfem::ElementTransformation & Tr,
+                            const mfem::IntegrationPoint & ip) override
   {
     return Tr.Attribute == _r ? _a * _jex->Eval(Tr, ip) * exp(_sign * 0.5 * _op->Eval(Tr, ip)) : 0;
   }

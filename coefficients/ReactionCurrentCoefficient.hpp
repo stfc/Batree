@@ -1,17 +1,14 @@
-#include "mfem.hpp"
-using namespace mfem;
-
-class ReactionCurrentCoefficient : public Coefficient
+class ReactionCurrentCoefficient : public mfem::Coefficient
 {
 private:
   ExchangeCurrentCoefficient * _jex = nullptr;
   OverPotentialCoefficient * _op = nullptr;
 
-  PWConstCoefficient _j_pwcc;
+  mfem::PWConstCoefficient _j_pwcc;
 
 public:
   /// SPM(e)
-  ReactionCurrentCoefficient() : _j_pwcc(Vector{+I / AN / LNE, 0., -I / AP / LPE}) {}
+  ReactionCurrentCoefficient() : _j_pwcc(mfem::Vector{+I / AN / LNE, 0., -I / AP / LPE}) {}
 
   /// P2D
   ReactionCurrentCoefficient(ExchangeCurrentCoefficient & jex, OverPotentialCoefficient & op)
@@ -20,10 +17,11 @@ public:
   }
 
   /// SPM(e)
-  virtual PWConstCoefficient & Eval() { return _j_pwcc; }
+  virtual mfem::PWConstCoefficient & Eval() { return _j_pwcc; }
 
   /// P2D (and any integrators)
-  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
+  virtual mfem::real_t Eval(mfem::ElementTransformation & Tr,
+                            const mfem::IntegrationPoint & ip) override
   {
     if (_jex)
       return 2 * _jex->Eval(Tr, ip) * sinh(.5 * _op->Eval(Tr, ip) / T);
