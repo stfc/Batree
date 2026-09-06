@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Cell.hpp"
-#include "mfem.hpp"
 
 class LGM50 : public Cell
 {

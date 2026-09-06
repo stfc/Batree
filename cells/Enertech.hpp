@@ -3,7 +3,6 @@
 #include "Cell.hpp"
 #include "_EnertechUnSpline.hpp"
 #include "_EnertechUpSpline.hpp"
-#include "mfem.hpp"
 
 class Enertech : public Cell
 {

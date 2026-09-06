@@ -1,5 +1,3 @@
-#include "mfem.hpp"
-
 class ReactionCurrentCoefficient : public mfem::Coefficient
 {
 private:

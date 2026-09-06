@@ -1,5 +1,3 @@
-#include "mfem.hpp"
-
 class ExchangeCurrentCoefficient : public mfem::Coefficient
 {
 private:

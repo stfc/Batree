@@ -1,5 +1,3 @@
-#include "mfem.hpp"
-
 class ElectrodeReactionCurrentCoefficient : public mfem::Coefficient
 {
 private:

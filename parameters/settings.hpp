@@ -1,6 +1,6 @@
+#include "mfem.hpp"
 #include "cells/LGM50.hpp"
 #include "cells/Enertech.hpp"
-#include "mfem.hpp"
 
 namespace settings
 {

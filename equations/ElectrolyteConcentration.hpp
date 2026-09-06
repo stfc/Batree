@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mfem.hpp"
 #include "equations/Equation.hpp"
 
 class ElectrolyteConcentration : public Equation

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "mfem.hpp"
-
 // Interpolated from PyBAMM's lico2_ocp_Ai2020.csv
 
 static const unsigned NBREAKS_LICO2 = 482;

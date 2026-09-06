@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mfem.hpp"
 #include "equations/ElectrolytePotential.hpp"
 #include "equations/ElectrolyteConcentration.hpp"
 #include "equations/SolidPotential.hpp"

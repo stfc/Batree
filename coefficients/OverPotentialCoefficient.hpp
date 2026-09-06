@@ -1,5 +1,3 @@
-#include "mfem.hpp"
-
 class OverPotentialCoefficient : public mfem::Coefficient
 {
 private:

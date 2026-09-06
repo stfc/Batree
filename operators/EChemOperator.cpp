@@ -18,6 +18,8 @@ EChemOperator::EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
     _x(x),
     _Solver(_x_h1space.GetComm())
 {
+  SetImplicitVariableType(mfem::TimeDependentOperator::STATE);
+
   _Solver.iterative_mode = true;
   _Solver.SetRelTol(1e-12);
   _Solver.SetMaxIter(500);

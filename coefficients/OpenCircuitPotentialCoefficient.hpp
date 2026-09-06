@@ -1,5 +1,3 @@
-#include "mfem.hpp"
-
 class OpenCircuitPotentialCoefficient : public mfem::Coefficient
 {
 private:

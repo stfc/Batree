@@ -1,7 +1,5 @@
 #pragma once
 
-#include "mfem.hpp"
-
 // Interpolated from PyBAMM's graphite_ocp_Enertech_Ai2020.csv
 
 static const unsigned NBREAKS_GRAPHITE = 125;

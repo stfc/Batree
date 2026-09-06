@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mfem.hpp"
 #include "parameters/settings.hpp"
 
 using namespace settings;

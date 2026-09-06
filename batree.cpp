@@ -1,9 +1,5 @@
 // Batree - An MFEM-based SPM, SPMe and P2D solver
 
-#include "mfem.hpp"
-#include <fstream>
-#include <iostream>
-#include <cmath>
 #include "operators/EChemOperator.hpp"
 
 int
@@ -100,7 +96,6 @@ main(int argc, char * argv[])
 
   // Perform time-integration (looping over the time iterations, ti, with a
   // time-step dt).
-  oper.SetImplicitVariableType(mfem::TimeDependentOperator::STATE);
   ode_solver->Init(oper);
 
   bool last_step = false;
