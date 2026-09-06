@@ -1,10 +1,10 @@
 #include "operators/EChemOperator.hpp"
 
-EChemOperator::EChemOperator(ParFiniteElementSpace & x_h1space,
-                             ParFiniteElementSpace & r_h1space,
+EChemOperator::EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
+                             mfem::ParFiniteElementSpace & r_h1space,
                              const unsigned & ndofs,
-                             BlockVector & x)
-  : TimeDependentOperator(ndofs, (real_t)0.0),
+                             mfem::BlockVector & x)
+  : mfem::TimeDependentOperator(ndofs, (mfem::real_t)0.0),
     _x_h1space(x_h1space),
     _r_h1space(r_h1space),
     _ep_gf(&_x_h1space),
@@ -54,7 +54,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace & x_h1space,
   _x.Update(_block_trueOffsets);
   _xp.Update(_x, _potential_trueOffsets);
   _xc.~BlockVector();
-  new (&_xc) BlockVector(_x, _block_trueOffsets[C], _concentration_trueOffsets);
+  new (&_xc) mfem::BlockVector(_x, _block_trueOffsets[C], _concentration_trueOffsets);
 
   // Set offsets for rhs (potential and concentration) true vectors
   _bp.Update(_potential_trueOffsets);
@@ -79,17 +79,17 @@ EChemOperator::EChemOperator(ParFiniteElementSpace & x_h1space,
   }
   else
   {
-    Array<int> particle_dofs, particle_offsets;
-    Array<Region> particle_regions;
+    mfem::Array<int> particle_dofs, particle_offsets;
+    mfem::Array<Region> particle_regions;
     GetParticleDofs(particle_dofs, particle_regions, particle_offsets);
 
     for (unsigned p = 0; p < NPAR; p++)
     {
       auto rank_iter = std::upper_bound(particle_offsets.begin(), particle_offsets.end(), p);
       int rank = std::distance(particle_offsets.begin(), rank_iter) - 1;
-      bool owned = rank == Mpi::WorldRank();
+      bool owned = rank == mfem::Mpi::WorldRank();
 
-      unsigned offset = particle_offsets[Mpi::WorldRank()];
+      unsigned offset = particle_offsets[mfem::Mpi::WorldRank()];
       int dof = owned ? particle_dofs[p - offset] : -1;
       Region region = particle_regions[p];
 
@@ -112,7 +112,7 @@ EChemOperator::EChemOperator(ParFiniteElementSpace & x_h1space,
 }
 
 void
-EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
+EChemOperator::ImplicitSolve(const mfem::real_t dt, const mfem::Vector & x, mfem::Vector & k)
 {
   // Solve the equation:
   //   M x(t + dt) / dt = - K x(t + dt) + M x(t) / dt + b <=>
@@ -122,7 +122,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
   if (P2D)
   {
     // for use within self-consistency loop
-    real_t j_norm, j_error;
+    mfem::real_t j_norm, j_error;
 
     // force re-assembly of electrolyte potential lhs and rhs
     _ep->Reset();
@@ -137,7 +137,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
     {
       // save previous iteration reaction current and its l2 norm
       _j_vec = _j_qfunction;
-      j_norm = GlobalLpNorm(2.0, _j_vec.Norml2(), MPI_COMM_WORLD);
+      j_norm = mfem::GlobalLpNorm(2.0, _j_vec.Norml2(), MPI_COMM_WORLD);
 
       // assemble each individual block of _Ap and _bp
       UpdatePotentialEquations();
@@ -158,7 +158,7 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 
       // update reaction current and compute its l2 error vs previous iteration
       _j->Project(_j_qfunction);
-      j_error = GlobalLpNorm(2.0, (_j_vec -= _j_qfunction).Norml2(), MPI_COMM_WORLD);
+      j_error = mfem::GlobalLpNorm(2.0, (_j_vec -= _j_qfunction).Norml2(), MPI_COMM_WORLD);
     } while (j_error > _scl_threshold * j_norm);
   }
 
@@ -167,13 +167,13 @@ EChemOperator::ImplicitSolve(const real_t dt, const Vector & x, Vector & k)
 
   // put _Ac and _bc together
   delete _Bc(ECC, ECC);
-  _Bc(ECC, ECC) = Add(1. / dt, _ec->GetM(), 1, _ec->GetK());
+  _Bc(ECC, ECC) = mfem::Add(1. / dt, _ec->GetM(), 1, _ec->GetK());
   _bc.GetBlock(ECC) = _ec->GetZ();
   _ec->GetM().AddMult(_xc.GetBlock(ECC), _bc.GetBlock(ECC), 1. / dt);
   for (unsigned p = 0; p < NPAR; p++)
   {
     delete _Bc(SCC + p, SCC + p);
-    _Bc(SCC + p, SCC + p) = Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK());
+    _Bc(SCC + p, SCC + p) = mfem::Add(1. / dt, _sc[p]->GetM(), 1, _sc[p]->GetK());
     _bc.GetBlock(SCC + p) = _sc[p]->GetZ();
     _sc[p]->GetM().AddMult(_xc.GetBlock(SCC + p), _bc.GetBlock(SCC + p), 1. / dt);
   }
@@ -216,16 +216,16 @@ void
 EChemOperator::UpdateConcentrationEquations()
 {
   _ec->Update(_ec_gfc, *_j);
-  const Array<real_t> & j = GetParticleReactionCurrent();
+  const mfem::Array<mfem::real_t> & j = GetParticleReactionCurrent();
   for (unsigned p = 0; p < NPAR; p++)
-    _sc[p]->Update(ConstantCoefficient(j[p]));
+    _sc[p]->Update(mfem::ConstantCoefficient(j[p]));
 }
 
 //
 // Surface Concentration
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetSurfaceConcentration(const Region & r)
 {
   MFEM_ASSERT(SPM || SPMe, "Cannot get surface concentration, only SPM and SPMe are supported.");
@@ -249,7 +249,7 @@ EChemOperator::SetSurfaceConcentration()
   {
     for (unsigned p = 0; p < NPAR; p++)
     {
-      real_t sc = _sc[p]->SurfaceConcentration(_x);
+      mfem::real_t sc = _sc[p]->SurfaceConcentration(_x);
       if (_sc[p]->IsParticleOwned())
         _sc_gf(_sc[p]->GetParticleDof()) = sc;
     }
@@ -264,7 +264,7 @@ EChemOperator::SetSurfaceConcentration()
 // Reference Potential
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetReferencePotential(const Region & r)
 {
   MFEM_ASSERT(P2D, "Cannot get reference potential, only P2D is supported.");
@@ -282,10 +282,10 @@ EChemOperator::SetReferencePotential()
     _rp_array[E] = 0.;
     _rp_array[PE] = 0.;
 
-    real_t Inp = GetElectrodeReactionCurrent(NE, 1.0);
-    real_t Inn = GetElectrodeReactionCurrent(NE, -1.0);
-    real_t Ipp = GetElectrodeReactionCurrent(PE, 1.0);
-    real_t Ipn = GetElectrodeReactionCurrent(PE, -1.0);
+    mfem::real_t Inp = GetElectrodeReactionCurrent(NE, 1.0);
+    mfem::real_t Inn = GetElectrodeReactionCurrent(NE, -1.0);
+    mfem::real_t Ipp = GetElectrodeReactionCurrent(PE, 1.0);
+    mfem::real_t Ipn = GetElectrodeReactionCurrent(PE, -1.0);
 
     _rp_array[E] = -2.0 * T * log((I + sqrt(4.0 * Inp * Inn + I * I)) / (2.0 * Inp));
     _rp_array[PE] =
@@ -297,7 +297,7 @@ EChemOperator::SetReferencePotential()
 // Partial Reaction Current for each electrode
 //
 
-real_t
+mfem::real_t
 EChemOperator::GetElectrodeReactionCurrent(const Region & r, const int & sign)
 {
   MFEM_ASSERT(r == NE || r == PE,
@@ -305,7 +305,7 @@ EChemOperator::GetElectrodeReactionCurrent(const Region & r, const int & sign)
               "electrodes (PE) are supported.");
 
   ElectrodeReactionCurrentCoefficient j(r, sign, *_jex, *_op);
-  QuadratureSpace x_qspace(_x_h1space.GetParMesh(), 2 * _x_h1space.FEColl()->GetOrder());
+  mfem::QuadratureSpace x_qspace(_x_h1space.GetParMesh(), 2 * _x_h1space.FEColl()->GetOrder());
   return x_qspace.Integrate(j);
 }
 
@@ -313,17 +313,17 @@ EChemOperator::GetElectrodeReactionCurrent(const Region & r, const int & sign)
 // Reaction Current for each particle
 //
 
-Array<real_t>
+mfem::Array<mfem::real_t>
 EChemOperator::GetParticleReactionCurrent()
 {
-  Array<real_t> j(NPAR);
+  mfem::Array<mfem::real_t> j(NPAR);
 
   if (SPM || SPMe)
     for (unsigned p = 0; p < NPAR; p++)
       j[p] = GetReactionCurrent(_sc[p]->GetParticleRegion());
   else if (P2D)
   {
-    ParGridFunction j_gf(&_x_h1space);
+    mfem::ParGridFunction j_gf(&_x_h1space);
 
     { // ProjectDiscCoefficient uses the element w/ maximal attribute for shared dofs
       for (int elem = 0; elem < _x_h1space.GetParMesh()->GetNE(); elem++)
@@ -365,7 +365,7 @@ EChemOperator::GetParticleReactionCurrent()
 // Reaction Current
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetReactionCurrent(const Region & r)
 {
   MFEM_ASSERT(SPM || SPMe,
@@ -389,7 +389,7 @@ EChemOperator::ConstructReactionCurrent()
 // Exchange Current
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetExchangeCurrent(const Region & r)
 {
   MFEM_ASSERT(SPM || SPMe,
@@ -417,7 +417,7 @@ EChemOperator::ConstructExchangeCurrent()
 // Open Circuit Potential
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetOpenCircuitPotential(const Region & r)
 {
   MFEM_ASSERT(SPM || SPMe,
@@ -442,7 +442,7 @@ EChemOperator::ConstructOpenCircuitPotential()
 // OverPotential
 //
 
-const real_t &
+const mfem::real_t &
 EChemOperator::GetOverPotential(const Region & r)
 {
   MFEM_ASSERT(SPM || SPMe, "Cannot get constant overpotential, only SPM and SPMe are supported.");
@@ -466,7 +466,7 @@ EChemOperator::ConstructOverPotential()
 // Voltage
 //
 
-real_t
+mfem::real_t
 EChemOperator::GetVoltage()
 {
   // Definition from JuBat: https://doi.org/10.1016/j.est.2023.107512
@@ -480,37 +480,37 @@ EChemOperator::GetVoltage()
   else if (P2D)
     return phi_scale * (GetReferencePotential(PE) - GetReferencePotential(NE));
 
-  mfem_error("Unreachable as method must be one of SPM, SPMe or P2D.");
+  mfem::mfem_error("Unreachable as method must be one of SPM, SPMe or P2D.");
 }
 
-real_t
+mfem::real_t
 EChemOperator::GetVoltageMarquisCorrection()
 {
-  PWCoefficient ce_pwc;
-  QuadratureSpace x_qspace(_x_h1space.GetParMesh(), _x_h1space.FEColl()->GetOrder());
+  mfem::PWCoefficient ce_pwc;
+  mfem::QuadratureSpace x_qspace(_x_h1space.GetParMesh(), _x_h1space.FEColl()->GetOrder());
 
   ce_pwc.UpdateCoefficient(NE, _ec_gfc);
-  real_t ce_ne_int = x_qspace.Integrate(ce_pwc);
+  mfem::real_t ce_ne_int = x_qspace.Integrate(ce_pwc);
   ce_pwc.ZeroCoefficient(NE);
 
   ce_pwc.UpdateCoefficient(PE, _ec_gfc);
-  real_t ce_pe_int = x_qspace.Integrate(ce_pwc);
+  mfem::real_t ce_pe_int = x_qspace.Integrate(ce_pwc);
   ce_pwc.ZeroCoefficient(PE);
 
   ce_pwc.UpdateCoefficient(SEP, _ec_gfc);
-  real_t ce_sep_int = x_qspace.Integrate(ce_pwc);
+  mfem::real_t ce_sep_int = x_qspace.Integrate(ce_pwc);
   ce_pwc.ZeroCoefficient(SEP);
 
   // Negative electrode, positive electrode and whole-cell x-averaged electrolyte concentration
-  real_t ce_ne_avg = ce_ne_int * NX / NNE;
-  real_t ce_pe_avg = ce_pe_int * NX / NPE;
-  real_t ce_av = ce_ne_int + ce_sep_int + ce_pe_int;
+  mfem::real_t ce_ne_avg = ce_ne_int * NX / NNE;
+  mfem::real_t ce_pe_avg = ce_pe_int * NX / NPE;
+  mfem::real_t ce_av = ce_ne_int + ce_sep_int + ce_pe_int;
 
   // MacInnes concentration overpotential uses log(c_e), not a linear approximation
-  real_t eta_c = 2.0 * T * (1 - TPLUS) * log(ce_ne_avg / ce_pe_avg);
+  mfem::real_t eta_c = 2.0 * T * (1 - TPLUS) * log(ce_ne_avg / ce_pe_avg);
   // We also use the average, not the initial, electrolyte concentration
-  real_t dphie = I / Kappa(ce_av) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
-  real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
+  mfem::real_t dphie = I / Kappa(ce_av) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
+  mfem::real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;
 }
@@ -519,10 +519,10 @@ EChemOperator::GetVoltageMarquisCorrection()
 // SoC
 //
 
-real_t
+mfem::real_t
 EChemOperator::GetSoC()
 {
-  real_t avg = 0.0;
+  mfem::real_t avg = 0.0;
 
   for (unsigned p = 0; p < NPAR; p++)
     if (_sc[p]->GetParticleRegion() == NE)
@@ -532,15 +532,15 @@ EChemOperator::GetSoC()
 }
 
 void
-EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
-                               Array<Region> & particle_regions,
-                               Array<int> & particle_offsets)
+EChemOperator::GetParticleDofs(mfem::Array<int> & my_particle_dofs,
+                               mfem::Array<Region> & particle_regions,
+                               mfem::Array<int> & particle_offsets)
 {
-  Array<int> gtdofs;
-  Array<Region> regions;
+  mfem::Array<int> gtdofs;
+  mfem::Array<Region> regions;
   for (int e = 0; e < _x_h1space.GetNE(); e++)
   {
-    Array<int> dofs;
+    mfem::Array<int> dofs;
     _x_h1space.GetElementDofs(e, dofs);
     for (int d : dofs)
     {
@@ -554,12 +554,12 @@ EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
   const unsigned n_gtdofs = NX * (_x_h1space.FEColl()->GetOrder() + 1);
 
   gtdofs.SetSize(n_gtdofs, -1);
-  Array<int> all_gtdofs(n_gtdofs * Mpi::WorldSize());
+  mfem::Array<int> all_gtdofs(n_gtdofs * mfem::Mpi::WorldSize());
   MPI_Allgather(
       gtdofs.GetData(), n_gtdofs, MPI_INT, all_gtdofs.GetData(), n_gtdofs, MPI_INT, MPI_COMM_WORLD);
 
   regions.SetSize(n_gtdofs, UNKNOWN);
-  Array<Region> all_regions(n_gtdofs * Mpi::WorldSize());
+  mfem::Array<Region> all_regions(n_gtdofs * mfem::Mpi::WorldSize());
   MPI_Allgather(regions.GetData(),
                 n_gtdofs,
                 MPI_INT,
@@ -568,14 +568,14 @@ EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
                 MPI_INT,
                 MPI_COMM_WORLD);
 
-  Array<Region> my_particle_regions;
+  mfem::Array<Region> my_particle_regions;
   for (int d = 0; d < _x_h1space.GetNDofs(); d++)
   {
     int ltdof = _x_h1space.GetLocalTDofNumber(d);
     int gtdof = _x_h1space.GetGlobalTDofNumber(d);
     Region r = UNKNOWN;
     if (ltdof != -1)
-      for (unsigned i = 0; i < n_gtdofs * Mpi::WorldSize(); i++)
+      for (unsigned i = 0; i < n_gtdofs * mfem::Mpi::WorldSize(); i++)
         if (gtdof == all_gtdofs[i] && (r = all_regions[i]) != SEP)
         {
           my_particle_dofs.Append(d);
@@ -585,7 +585,7 @@ EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
   }
   my_particle_regions.SetSize(n_gtdofs, UNKNOWN);
 
-  particle_regions.SetSize(n_gtdofs * Mpi::WorldSize(), UNKNOWN);
+  particle_regions.SetSize(n_gtdofs * mfem::Mpi::WorldSize(), UNKNOWN);
   MPI_Allgather(my_particle_regions.GetData(),
                 n_gtdofs,
                 MPI_INT,
@@ -597,12 +597,12 @@ EChemOperator::GetParticleDofs(Array<int> & my_particle_dofs,
     particle_regions.DeleteFirst(UNKNOWN);
 
   int my_particles = my_particle_dofs.Size();
-  particle_offsets.SetSize(Mpi::WorldSize());
+  particle_offsets.SetSize(mfem::Mpi::WorldSize());
   MPI_Allgather(&my_particles, 1, MPI_INT, particle_offsets.GetData(), 1, MPI_INT, MPI_COMM_WORLD);
 
   particle_offsets.Prepend(0);
   particle_offsets.PartialSum();
-  MFEM_ASSERT(unsigned(particle_offsets[Mpi::WorldSize()]) == NPAR &&
+  MFEM_ASSERT(unsigned(particle_offsets[mfem::Mpi::WorldSize()]) == NPAR &&
                   unsigned(particle_regions.Size()) == NPAR,
               "Failed to distribute particles across processors.");
 }
