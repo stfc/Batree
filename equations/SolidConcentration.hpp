@@ -1,9 +1,6 @@
 #pragma once
 
-#include "mfem.hpp"
 #include "equations/Equation.hpp"
-
-using namespace mfem;
 
 class SolidConcentration : public Equation
 {
@@ -13,13 +10,13 @@ private:
   const bool particle_owned;
   const int particle_dof;
   const Region particle_region;
-  const Array<int> surface_bdr;
+  const mfem::Array<int> surface_bdr;
   const int surface_tdof;
   const bool surface_owned;
   const int surface_rank;
 
 public:
-  SolidConcentration(ParFiniteElementSpace & f,
+  SolidConcentration(mfem::ParFiniteElementSpace & f,
                      const unsigned & id,
                      const int & rank,
                      const int & dof,
@@ -27,7 +24,7 @@ public:
     : Equation(f),
       particle_id(id),
       particle_rank(rank),
-      particle_owned(particle_rank == Mpi::WorldRank()),
+      particle_owned(particle_rank == mfem::Mpi::WorldRank()),
       particle_dof(dof),
       particle_region(region),
       surface_bdr({0, 1}),
@@ -37,9 +34,9 @@ public:
   {
   }
 
-  virtual void Update(const Coefficient & j) override;
-  real_t SurfaceConcentration(const BlockVector & x);
-  real_t AverageConcentration(const BlockVector & x);
+  virtual void Update(const mfem::Coefficient & j) override;
+  mfem::real_t SurfaceConcentration(const mfem::BlockVector & x);
+  mfem::real_t AverageConcentration(const mfem::BlockVector & x);
   int FindSurfaceTrueDof();
   int FindSurfaceRank();
   int GetParticleRank() { return particle_rank; }

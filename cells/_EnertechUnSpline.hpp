@@ -1,14 +1,10 @@
 #pragma once
 
-#include "mfem.hpp"
-
-using namespace mfem;
-
 // Interpolated from PyBAMM's graphite_ocp_Enertech_Ai2020.csv
 
 static const unsigned NBREAKS_GRAPHITE = 125;
 
-static const real_t BREAKS_GRAPHITE[125] = {
+static const mfem::real_t BREAKS_GRAPHITE[125] = {
     0,           0.0005,      0.00127041,  0.00152479,  0.00190595,
     0.002223558, 0.004060547, 0.004820151, 0.006463943, 0.00741337,
     0.008616506, 0.009123417, 0.010768226, 0.012665046, 0.014118344,
@@ -35,7 +31,7 @@ static const real_t BREAKS_GRAPHITE[125] = {
     0.989255096, 0.991401407, 0.993359929, 0.995130154, 0.996776304,
     0.99822944,  0.999241066, 0.999746961, 0.999936448, 1};
 
-static const real_t COEFS_GRAPHITE[124][4] = {
+static const mfem::real_t COEFS_GRAPHITE[124][4] = {
     {2751951279.3223104, -6087516.3689890299, 1355.7703646639372, 3.5},
     {2751951279.3223062, -1959589.4500055648, -2667.7825448333601, 3},
     {-6959796515.9928989, 4400802.9053025283, -787.0472867380256, 1.04},

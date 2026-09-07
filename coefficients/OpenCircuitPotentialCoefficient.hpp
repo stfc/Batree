@@ -1,39 +1,36 @@
-#include "mfem.hpp"
-using namespace mfem;
-
-class OpenCircuitPotentialCoefficient : public Coefficient
+class OpenCircuitPotentialCoefficient : public mfem::Coefficient
 {
 private:
-  GridFunctionCoefficient * _surface_concentration_gfc = nullptr;
+  mfem::GridFunctionCoefficient * _surface_concentration_gfc = nullptr;
 
-  const std::function<real_t(real_t)> _un;
-  const std::function<real_t(real_t)> _up;
+  const std::function<mfem::real_t(mfem::real_t)> _un;
+  const std::function<mfem::real_t(mfem::real_t)> _up;
 
-  const real_t * _scn = nullptr;
-  const real_t * _scp = nullptr;
+  const mfem::real_t * _scn = nullptr;
+  const mfem::real_t * _scp = nullptr;
 
-  PWConstCoefficient _ocp_pwcc;
+  mfem::PWConstCoefficient _ocp_pwcc;
 
 public:
   /// SPM(e)
-  OpenCircuitPotentialCoefficient(const std::function<real_t(real_t)> & un,
-                                  const std::function<real_t(real_t)> & up,
-                                  const real_t & scn,
-                                  const real_t & scp)
+  OpenCircuitPotentialCoefficient(const std::function<mfem::real_t(mfem::real_t)> & un,
+                                  const std::function<mfem::real_t(mfem::real_t)> & up,
+                                  const mfem::real_t & scn,
+                                  const mfem::real_t & scp)
     : _un(un), _up(up), _scn(&scn), _scp(&scp), _ocp_pwcc(3)
   {
   }
 
   /// P2D
-  OpenCircuitPotentialCoefficient(const std::function<real_t(real_t)> & un,
-                                  const std::function<real_t(real_t)> & up,
-                                  GridFunctionCoefficient & sc)
+  OpenCircuitPotentialCoefficient(const std::function<mfem::real_t(mfem::real_t)> & un,
+                                  const std::function<mfem::real_t(mfem::real_t)> & up,
+                                  mfem::GridFunctionCoefficient & sc)
     : _surface_concentration_gfc(&sc), _un(un), _up(up)
   {
   }
 
   /// SPM(e)
-  virtual PWConstCoefficient & Eval()
+  virtual mfem::PWConstCoefficient & Eval()
   {
     _ocp_pwcc(NE) = _un(*_scn);
     _ocp_pwcc(PE) = _up(*_scp);
@@ -41,7 +38,8 @@ public:
   }
 
   /// P2D
-  virtual real_t Eval(ElementTransformation & Tr, const IntegrationPoint & ip) override
+  virtual mfem::real_t Eval(mfem::ElementTransformation & Tr,
+                            const mfem::IntegrationPoint & ip) override
   {
     switch (Tr.Attribute)
     {
