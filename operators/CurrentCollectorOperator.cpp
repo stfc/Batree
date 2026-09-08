@@ -23,14 +23,21 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _block_trueOffsets.PartialSum();
 
   _x.Update(_block_trueOffsets);
-
+  _f.Update(_block_trueOffsets);
+  //How to distinguish between the positive and negative current collector?
   _cb = new ChargeBalance(h1_fespace_current_collector_positive, &l2_fespace_currents);
   _cc = new CurrentConstraint(h1_fespace_current_collector_positive, &l2_fespace_currents);
 }
 
 void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
 {
+   //Is the below correct place to populate the _Bcc matrix? Should it be done in the constructor?
+   delete _Bcc(0, 0);
+  _Bcc(0, 0) = &_cb->GetK();
+   delete _Bcc(0, 2);
+  _Bcc(0, 2) = &_cb->GetC();
 
+  _f.GetBlock(0) = _cb->GetZ();
 }
 
 CurrentCollectorOperator::~CurrentCollectorOperator()

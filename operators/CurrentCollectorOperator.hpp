@@ -35,7 +35,10 @@ protected:
    /// System matrices for concentration and potential eqs
    HypreParMatrix *_Acc = nullptr;
 
-   Array2D<const HypreParMatrix *> _Bcc{4, 4};
+   /// Auxiliary rhs vectors for MSMD equations
+   mutable BlockVector _f;
+
+   mutable Array2D<const HypreParMatrix *> _Bcc{4, 4};
 
    /// Reference to solution true dof vector
    BlockVector & _x;
