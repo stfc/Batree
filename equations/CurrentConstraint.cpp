@@ -1,8 +1,8 @@
 
-#include "equations/ChargeBalance.hpp"
+#include "equations/CurrentConstraint.hpp"
 
 void
-ChargeBalance::Update()
+CurrentConstraint::Update()
 {
 
   if (!C)
@@ -18,6 +18,8 @@ ChargeBalance::Update()
     mfem::ConstantCoefficient one(1.0);
     Q->AddDomainIntegrator(new DomainLFIntegrator(one));
   }
+
   Q->Assemble();
   Q->ParallelAssemble(b);
+  
 }
