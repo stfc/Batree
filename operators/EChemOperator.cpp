@@ -1,12 +1,21 @@
 #include "operators/EChemOperator.hpp"
 
-EChemOperator::EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
-                             mfem::ParFiniteElementSpace & r_h1space,
-                             const unsigned & ndofs,
-                             mfem::BlockVector & x)
-  : mfem::TimeDependentOperator(ndofs, (mfem::real_t)0.0),
-    _x_h1space(x_h1space),
-    _r_h1space(r_h1space),
+EChemOperator::EChemOperator(int order, mfem::BlockVector & x)
+  : mfem::TimeDependentOperator(),
+    _x_smesh(
+        []
+        {
+          mfem::Mesh mesh = mfem::Mesh::MakeCartesian1D(NX);
+          for (unsigned i = 0; i < NX; i++)
+            mesh.SetAttribute(i, i < NNE ? NE : i < NNE + NSEP ? SEP : PE);
+          return mesh;
+        }()),
+    _r_smesh(mfem::Mesh::MakeCartesian1D(NR)),
+    _x_pmesh(MPI_COMM_WORLD, _x_smesh),
+    _r_pmesh(MPI_COMM_WORLD, _r_smesh),
+    _h1_coll(order, /*dim*/ 1),
+    _x_h1space(&_x_pmesh, &_h1_coll),
+    _r_h1space(&_r_pmesh, &_h1_coll),
     _ep_gf(&_x_h1space),
     _sp_gf(&_x_h1space),
     _ec_gf(&_x_h1space),
@@ -16,7 +25,7 @@ EChemOperator::EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
     _ec_gfc(&_ec_gf),
     _sc_gfc(&_sc_gf),
     _x(x),
-    _Solver(_x_h1space.GetComm())
+    _Solver(MPI_COMM_WORLD)
 {
   SetImplicitVariableType(mfem::TimeDependentOperator::STATE);
 
@@ -25,6 +34,29 @@ EChemOperator::EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
   _Solver.SetMaxIter(500);
   _Solver.SetPrintLevel(0);
   _Solver.SetPreconditioner(_Prec);
+
+  // Get the number of dofs in the system (including boundaries), for both the macro and micro
+  // problems, _owned_ by this processor.
+  int fe_size_owned = NMACRO * _x_h1space.GetTrueVSize() + NPAR * _r_h1space.GetTrueVSize();
+
+  // Set the operator size
+  height = width = fe_size_owned;
+
+  // Get the total number of dofs in the system (including boundaries), for both the macro and micro
+  // problems, across all processors. This is for reporting purposes only.
+  int fe_size_global = NMACRO * _x_h1space.GlobalTrueVSize() + NPAR * _r_h1space.GlobalTrueVSize();
+
+  // Print problem size information to the screen
+  if (mfem::Mpi::Root())
+  {
+    std::cout << std::endl;
+    std::cout << "# vars: " << (SPM ? NPAR : SPMe ? NMACROC + NPAR : P2D ? NEQS : 0) << std::endl;
+    std::cout << "# dofs (total): "
+              << fe_size_global - (SPMe ? NMACROP * _x_h1space.GlobalTrueVSize() : 0) << std::endl;
+    std::cout << "# dofs (rank 0): "
+              << fe_size_owned - (SPMe ? NMACROP * _x_h1space.GetTrueVSize() : 0) << std::endl;
+    std::cout << std::endl;
+  }
 
   _block_trueOffsets.SetSize(NEQS + 1);
   _potential_trueOffsets.SetSize(NMACROP + 1);
