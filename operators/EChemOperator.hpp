@@ -23,7 +23,9 @@ protected:
 
   /// FE collections and spaces for both the macro and micro problems
   mfem::H1_FECollection _h1_coll;
+  mfem::L2_FECollection _l2_coll;
   mfem::ParFiniteElementSpace _x_h1space;
+  mfem::ParFiniteElementSpace _x_l2space;
   mfem::ParFiniteElementSpace _r_h1space;
 
   /// Equation objects (3 macro eqs plus NPAR micro eqs)
@@ -138,8 +140,8 @@ public:
   mfem::real_t GetSoC();
 
   virtual void GetParticleDofs(mfem::Array<int> & particle_dofs,
-                               mfem::Array<Region> & particle_regions,
-                               mfem::Array<int> & particle_offsets);
+                               mfem::Array<int> & particle_ranks,
+                               mfem::Array<Region> & particle_regions);
 
   virtual ~EChemOperator()
   {

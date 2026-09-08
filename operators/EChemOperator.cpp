@@ -14,12 +14,14 @@ EChemOperator::EChemOperator(int order, mfem::BlockVector & x)
     _x_pmesh(MPI_COMM_WORLD, _x_smesh),
     _r_pmesh(MPI_COMM_WORLD, _r_smesh),
     _h1_coll(order, /*dim*/ 1),
+    _l2_coll(order - 1, /*dim*/ 1),
     _x_h1space(&_x_pmesh, &_h1_coll),
+    _x_l2space(&_x_pmesh, &_l2_coll),
     _r_h1space(&_r_pmesh, &_h1_coll),
     _ep_gf(&_x_h1space),
     _sp_gf(&_x_h1space),
     _ec_gf(&_x_h1space),
-    _sc_gf(&_x_h1space),
+    _sc_gf(&_x_l2space),
     _ep_gfc(&_ep_gf),
     _sp_gfc(&_sp_gf),
     _ec_gfc(&_ec_gf),
@@ -113,18 +115,14 @@ EChemOperator::EChemOperator(int order, mfem::BlockVector & x)
   }
   else
   {
-    mfem::Array<int> particle_dofs, particle_offsets;
+    mfem::Array<int> particle_dofs, particle_ranks;
     mfem::Array<Region> particle_regions;
-    GetParticleDofs(particle_dofs, particle_regions, particle_offsets);
+    GetParticleDofs(particle_dofs, particle_ranks, particle_regions);
 
-    for (unsigned p = 0; p < NPAR; p++)
+    for (unsigned c = 0, p = 0; p < NPAR; p++)
     {
-      auto rank_iter = std::upper_bound(particle_offsets.begin(), particle_offsets.end(), p);
-      int rank = std::distance(particle_offsets.begin(), rank_iter) - 1;
-      bool owned = rank == mfem::Mpi::WorldRank();
-
-      unsigned offset = particle_offsets[mfem::Mpi::WorldRank()];
-      int dof = owned ? particle_dofs[p - offset] : -1;
+      int rank = particle_ranks[p];
+      int dof = rank == mfem::Mpi::WorldRank() ? particle_dofs[c++] : -1;
       Region region = particle_regions[p];
 
       _sc.Append(new SolidConcentration(_r_h1space, p, rank, dof, region));
@@ -357,19 +355,8 @@ EChemOperator::GetParticleReactionCurrent()
       j[p] = GetReactionCurrent(_sc[p]->GetParticleRegion());
   else if (P2D)
   {
-    mfem::ParGridFunction j_gf(&_x_h1space);
-
-    { // ProjectDiscCoefficient uses the element w/ maximal attribute for shared dofs
-      for (int elem = 0; elem < _x_h1space.GetParMesh()->GetNE(); elem++)
-        if (_x_h1space.GetAttribute(elem) == SEP)
-          _x_h1space.GetParMesh()->SetAttribute(elem, 0);
-
-      j_gf.ProjectDiscCoefficient(*_j);
-
-      for (int elem = 0; elem < _x_h1space.GetParMesh()->GetNE(); elem++)
-        if (_x_h1space.GetAttribute(elem) == 0)
-          _x_h1space.GetParMesh()->SetAttribute(elem, SEP);
-    }
+    mfem::ParGridFunction j_gf(&_x_l2space);
+    j_gf.ProjectCoefficient(*_j);
 
     for (unsigned p = 0; p < NPAR; p++)
     {
@@ -566,77 +553,45 @@ EChemOperator::GetSoC()
 }
 
 void
-EChemOperator::GetParticleDofs(mfem::Array<int> & my_particle_dofs,
-                               mfem::Array<Region> & particle_regions,
-                               mfem::Array<int> & particle_offsets)
+EChemOperator::GetParticleDofs(mfem::Array<int> & particle_dofs,
+                               mfem::Array<int> & particle_ranks,
+                               mfem::Array<Region> & particle_regions)
 {
-  mfem::Array<int> gtdofs;
+  mfem::Array<int> dofs;
   mfem::Array<Region> regions;
-  for (int e = 0; e < _x_h1space.GetNE(); e++)
+  for (int e = 0; e < _x_l2space.GetNE(); e++)
   {
-    mfem::Array<int> dofs;
-    _x_h1space.GetElementDofs(e, dofs);
+    _x_l2space.GetElementDofs(e, dofs);
     for (int d : dofs)
-    {
-      int gtdof = _x_h1space.GetGlobalTDofNumber(d);
-      Region r = Region(_x_h1space.GetAttribute(e));
-      gtdofs.Append(gtdof);
-      regions.Append(r);
-    }
+      if (Region r = Region(_x_l2space.GetAttribute(e)); r != SEP)
+      {
+        particle_dofs.Append(d);
+        regions.Append(r);
+      }
   }
 
-  const unsigned n_gtdofs = NX * (_x_h1space.FEColl()->GetOrder() + 1);
+  int particles = particle_dofs.Size();
+  mfem::Array<int> particles_per_rank(mfem::Mpi::WorldSize());
+  MPI_Allgather(&particles, 1, MPI_INT, particles_per_rank.GetData(), 1, MPI_INT, MPI_COMM_WORLD);
 
-  gtdofs.SetSize(n_gtdofs, -1);
-  mfem::Array<int> all_gtdofs(n_gtdofs * mfem::Mpi::WorldSize());
-  MPI_Allgather(
-      gtdofs.GetData(), n_gtdofs, MPI_INT, all_gtdofs.GetData(), n_gtdofs, MPI_INT, MPI_COMM_WORLD);
+  MFEM_ASSERT(particles_per_rank.Sum() == int(NPAR), "Total no. of particles does not match NPAR.");
 
-  regions.SetSize(n_gtdofs, UNKNOWN);
-  mfem::Array<Region> all_regions(n_gtdofs * mfem::Mpi::WorldSize());
-  MPI_Allgather(regions.GetData(),
-                n_gtdofs,
-                MPI_INT,
-                all_regions.GetData(),
-                n_gtdofs,
-                MPI_INT,
-                MPI_COMM_WORLD);
-
-  mfem::Array<Region> my_particle_regions;
-  for (int d = 0; d < _x_h1space.GetNDofs(); d++)
-  {
-    int ltdof = _x_h1space.GetLocalTDofNumber(d);
-    int gtdof = _x_h1space.GetGlobalTDofNumber(d);
-    Region r = UNKNOWN;
-    if (ltdof != -1)
-      for (unsigned i = 0; i < n_gtdofs * mfem::Mpi::WorldSize(); i++)
-        if (gtdof == all_gtdofs[i] && (r = all_regions[i]) != SEP)
-        {
-          my_particle_dofs.Append(d);
-          my_particle_regions.Append(r);
-          break;
-        }
-  }
-  my_particle_regions.SetSize(n_gtdofs, UNKNOWN);
-
-  particle_regions.SetSize(n_gtdofs * mfem::Mpi::WorldSize(), UNKNOWN);
-  MPI_Allgather(my_particle_regions.GetData(),
-                n_gtdofs,
-                MPI_INT,
-                particle_regions.GetData(),
-                n_gtdofs,
-                MPI_INT,
-                MPI_COMM_WORLD);
-  while (particle_regions.Find(UNKNOWN) != -1)
-    particle_regions.DeleteFirst(UNKNOWN);
-
-  int my_particles = my_particle_dofs.Size();
-  particle_offsets.SetSize(mfem::Mpi::WorldSize());
-  MPI_Allgather(&my_particles, 1, MPI_INT, particle_offsets.GetData(), 1, MPI_INT, MPI_COMM_WORLD);
-
+  mfem::Array<int> particle_offsets = particles_per_rank;
   particle_offsets.Prepend(0);
   particle_offsets.PartialSum();
-  MFEM_ASSERT(unsigned(particle_offsets[mfem::Mpi::WorldSize()]) == NPAR &&
-                  unsigned(particle_regions.Size()) == NPAR,
-              "Failed to distribute particles across processors.");
+
+  particle_regions.SetSize(NPAR);
+  MPI_Allgatherv(regions.GetData(),
+                 particles,
+                 MPI_INT,
+                 particle_regions.GetData(),
+                 particles_per_rank.GetData(),
+                 particle_offsets.GetData(),
+                 MPI_INT,
+                 MPI_COMM_WORLD);
+
+  particle_ranks.SetSize(NPAR);
+  for (int rank = 0; rank < mfem::Mpi::WorldSize(); rank++)
+    for (int p = particle_offsets[rank]; p < particle_offsets[rank + 1]; p++)
+      particle_ranks[p] = rank;
 }
