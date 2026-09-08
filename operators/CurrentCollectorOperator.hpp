@@ -1,9 +1,12 @@
+#pragma once
+
 #include "mfem.hpp"
+
+#include "equations/ChargeBalance.hpp"
+#include "equations/CurrentConstraint.hpp"
 
 using namespace std;
 using namespace mfem;
-
-#pragma once
 
 class CurrentCollectorOperator : public Operator
 {
@@ -11,6 +14,9 @@ protected:
    ParFiniteElementSpace &h1_fespace_current_collector_positive;
    ParFiniteElementSpace &h1_fespace_current_collector_negative;
    ParFiniteElementSpace &l2_fespace_currents;
+
+   ChargeBalance * _cb = nullptr;
+   CurrentConstraint * _cc = nullptr;
 
    HypreParMatrix *T; // T = M + dt K
    real_t current_dt;
@@ -26,7 +32,10 @@ protected:
    /// For solution true vector (4 MSMD equations)
    Array<int> _block_trueOffsets;
 
-   Array2D<const HypreParMatrix *> _Bc{4, 4};
+   /// System matrices for concentration and potential eqs
+   HypreParMatrix *_Acc = nullptr;
+
+   Array2D<const HypreParMatrix *> _Bcc{4, 4};
 
    /// Reference to solution true dof vector
    BlockVector & _x;

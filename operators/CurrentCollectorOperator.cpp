@@ -1,5 +1,4 @@
 #include "CurrentCollectorOperator.hpp"
-#include "parameters/settings.hpp"
 
 CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_pos, ParFiniteElementSpace *& f_neg, ParFiniteElementSpace *& f_l2, const unsigned & ndofs, BlockVector & x)
    : Operator(ndofs), h1_fespace_current_collector_positive(*f_pos), h1_fespace_current_collector_negative(*f_neg), l2_fespace_currents(*f_l2), _x(x),
@@ -24,6 +23,9 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _block_trueOffsets.PartialSum();
 
   _x.Update(_block_trueOffsets);
+
+  _cb = new ChargeBalance(h1_fespace_current_collector_positive, &l2_fespace_currents);
+  _cc = new CurrentConstraint(h1_fespace_current_collector_positive, &l2_fespace_currents);
 }
 
 void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
