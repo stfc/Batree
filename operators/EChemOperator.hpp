@@ -13,9 +13,20 @@
 class EChemOperator : public mfem::TimeDependentOperator
 {
 protected:
-  mfem::ParFiniteElementSpace & _x_h1space;
-  mfem::ParFiniteElementSpace & _r_h1space;
+  /// 1d serial meshes for both the macro and micro problems
+  mfem::Mesh _x_smesh;
+  mfem::Mesh _r_smesh;
 
+  /// Parallel meshes defined by a partitioning of the respective serial mesh
+  mfem::ParMesh _x_pmesh;
+  mfem::ParMesh _r_pmesh;
+
+  /// FE collections and spaces for both the macro and micro problems
+  mfem::H1_FECollection _h1_coll;
+  mfem::ParFiniteElementSpace _x_h1space;
+  mfem::ParFiniteElementSpace _r_h1space;
+
+  /// Equation objects (3 macro eqs plus NPAR micro eqs)
   ElectrolytePotential * _ep = nullptr;
   SolidPotential * _sp = nullptr;
   ElectrolyteConcentration * _ec = nullptr;
@@ -88,10 +99,7 @@ protected:
   mfem::Vector _j_vec = mfem::Vector(_j_qfunction.Size());
 
 public:
-  EChemOperator(mfem::ParFiniteElementSpace & x_h1space,
-                mfem::ParFiniteElementSpace & r_h1space,
-                const unsigned & ndofs,
-                mfem::BlockVector & x);
+  EChemOperator(int order, mfem::BlockVector & x);
 
   virtual void Mult(const mfem::Vector & x, mfem::Vector & dx_dt) const override {};
 
