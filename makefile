@@ -17,11 +17,13 @@ EQ_SRC_FILES = SolidConcentration.cpp \
                ElectrolyteConcentration.cpp \
                SolidPotential.cpp \
                ElectrolytePotential.cpp \
+               CurrentConstraint.cpp \
                ChargeBalance.cpp
 EQ_INC_FILES = SolidConcentration.hpp \
                ElectrolyteConcentration.hpp \
                SolidPotential.hpp \
                ElectrolytePotential.hpp \
+               CurrentConstraint.hpp \
                ChargeBalance.hpp \
                Equation.hpp
 CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
