@@ -102,6 +102,30 @@ real_t EPS_S = 0;
 
 real_t TPLUS = 0;
 
+mfem::real_t A_area = 1;      // current collector area
+mfem::real_t L0 = 1;          // current-collector scale (\sqrt(A_area))
+mfem::real_t tab_width = 0.1; // collector tab width
+
+mfem::real_t i0 = 0;     // transverse current density scale
+
+mfem::real_t delta_p = 18e-6; //[m] foil thicknesses of the positive current collector
+mfem::real_t delta_n = 15e-6;
+
+mfem::real_t sigma_p = 37.8e+6; // [Sm^{−1}] electrical conductivity of the current collector
+mfem::real_t sigma_n = 59.6e+6;
+
+mfem::real_t Acs_p = 0;      // cross-sectional area of the top surface of the positive current tab
+mfem::real_t Acs_n = 0;      // cross-sectional area of the top surface of the negative current tab
+
+mfem::real_t delta_p_scale = 0; //scaled foil thicknesses of the positive current collector
+mfem::real_t delta_n_scale = 0; //scaled foil thicknesses of the negative current collector
+
+mfem::real_t Acs_p_scale = 0; // scaled cross-sectional area of the top surface of the positive current-collector tab
+mfem::real_t Acs_n_scale = 0; // scaled cross-sectional area of the top surface of the negative current-collector tab
+
+mfem::real_t beta_p = 0; // current-collector resistance
+mfem::real_t beta_n = 0;
+
 void
 init_settings(std::string m, std::string c, real_t c_rate, int order)
 {
@@ -203,5 +227,20 @@ init_settings(std::string m, std::string c, real_t c_rate, int order)
   EPS_S = CELL->eps_s();
 
   TPLUS = CELL->tplus();
+
+  L0 = sqrt(A_area);
+  Acs_p = tab_width * delta_p;
+  Acs_n = tab_width * delta_n;
+
+  delta_p_scale = delta_p / L0;
+  delta_n_scale = delta_n / L0;
+
+  Acs_p_scale = Acs_p / L0 / L0;
+  Acs_n_scale = Acs_n / L0 / L0;
+
+  i0 = CELL->I_typ() / A_area; // scaled distribution of the transverse current density
+
+  beta_p = i0 * L0 / phi_scale / sigma_p;
+  beta_n = i0 * L0 / phi_scale / sigma_n;
 }
 }

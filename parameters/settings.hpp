@@ -70,6 +70,20 @@ extern const real_t F;     // Faraday constant, C/mol
 extern const real_t R;     // Universal gas constant, J/(mol*K)
 extern const real_t T_ref; // Reference temperature, K
 
+extern const mfem::real_t A_area; // current collector area
+
+extern const mfem::real_t sigma_p; // electrical conductivity of the positive current collector
+extern const mfem::real_t sigma_n;
+
+extern const mfem::real_t tab_width; // current collector tab width
+
+extern const mfem::real_t delta_p; // foil thicknesses of the positive current collector
+extern const mfem::real_t delta_n;
+
+extern const mfem::real_t Acs_p; // cross-sectional area of the top surface of the positive current-collector tab (tab_width*delta_p)
+extern const mfem::real_t Acs_n; // cross-sectional area of the top surface of the negative current-collector tab 
+
+
 // Scalings
 extern const real_t t0; // Time scale.
 extern const real_t r0; // Length scale (particle)
@@ -92,6 +106,9 @@ extern const real_t Dn_scale; // Negative particle diffusion coefficient scale. 
 extern const real_t Dp_scale; // Positive particle diffusion coefficient scale.  Units of m^2/s.
 
 extern const real_t De_scale;
+
+extern const mfem::real_t L0; // current-collector scale (\sqrt(A_area))
+extern const mfem::real_t i0; // transverse current density scale
 
 // Transport efficiency (inverse MacMullin number). This is B(x) in Planella, and is absorbed into
 // the definition of kappa_ne/kappa_pe/kappa_sp in JuBat.
@@ -134,6 +151,15 @@ extern const real_t RP; // scaled Radius of Positive particle
 
 extern const real_t SIGP; // Scaled positive electrode conductivity.
 extern const real_t SIGN; // Scaled negative electrode conductivity.
+
+extern const mfem::real_t Acs_p_scale; // scaled cross-sectional area of the top surface of the positive current-collector tab
+extern const mfem::real_t Acs_n_scale; // scaled cross-sectional area of the top surface of the negative current-collector tab
+
+extern const mfem::real_t delta_p_scale; // scaled foil thicknesses of the  positive current collector
+extern const mfem::real_t delta_n_scale; // scaled foil thicknesses of the  negative current collector
+
+extern const mfem::real_t beta_p; // scaled current-collector resistance
+extern const mfem::real_t beta_n;
 
 // Extras to be properly defined later.
 extern const real_t CE0; // scaled initial Concentration of Electrolyte
