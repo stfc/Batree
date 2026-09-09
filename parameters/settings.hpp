@@ -90,6 +90,29 @@ extern const mfem::real_t Dp_scale; // Positive particle diffusion coefficient s
 
 extern const mfem::real_t De_scale;
 
+extern const mfem::real_t delta_p; // the foil thicknesses of the  metal current collectors
+extern const mfem::real_t delta_n;
+
+extern const mfem::real_t sigma_p; // electrical conductivity of the current collector
+extern const mfem::real_t sigma_n;
+
+extern const mfem::real_t A_area; // Current collector area
+extern const mfem::real_t i0;     // scaled distribution of the transverse current density
+
+extern const mfem::real_t L0;    // square root of the current-collector area
+extern const mfem::real_t tab_b; // tab width
+
+extern const mfem::real_t
+    Acs_p; // cross-sectional area of the top surface of one tab (tab_b*delta_k)
+extern const mfem::real_t Acs_pscale; // scaled cross-sectional area of the top surface of one tab
+
+extern const mfem::real_t
+    Acs_n; // cross-sectional area of the top surface of one tab (tab_b*delta_k)
+extern const mfem::real_t Acs_nscale; // scaled cross-sectional area of the top surface of one tab
+
+extern const mfem::real_t beta_p; // current-collector resistance
+extern const mfem::real_t beta_n;
+
 // Transport efficiency (inverse MacMullin number). This is B(x) in Planella, and is absorbed into
 // the definition of kappa_ne/kappa_pe/kappa_sp in JuBat.
 extern const mfem::real_t BPE;
