@@ -132,8 +132,8 @@ init_settings(std::string m, std::string c, mfem::real_t c_rate, int order)
     NNEPAR = NPEPAR = 1;
   else if (P2D)
   {
-    NNEPAR = NNE * order + 1;
-    NPEPAR = NPE * order + 1;
+    NNEPAR = NNE * order;
+    NPEPAR = NPE * order;
   }
   NPAR = NNEPAR + NPEPAR;
   NEQS = NMACRO + NPAR;
