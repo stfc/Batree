@@ -86,7 +86,7 @@ protected:
   mfem::BlockVector _bc, _bp;
 
   /// Self-consistency loop "L2" error threshold (JuBat uses 1e-9)
-  const mfem::real_t _scl_threshold = 1e-7;
+  const mfem::real_t _scl_threshold = 1e-3;
 
   /// Self-consistency loop 4-point integration rule
   mfem::IntegrationRule _scl_ir = mfem::IntegrationRules().Get(mfem::Geometry::Type::SEGMENT, 7);
