@@ -74,7 +74,8 @@ main(int argc, char * argv[])
       if (mfem::Mpi::Root())
       {
         std::cout << std::left << ti << "\t" << t << "\t";
-        std::cout << std::setprecision(8) << std::setw(8) << V << "\t" << SoC << std::endl;
+        std::cout << std::setw(8) << std::setprecision(7) << V << "\t";
+        std::cout << std::setprecision(4) << SoC << std::endl;
       }
     }
   }
