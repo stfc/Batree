@@ -507,30 +507,27 @@ EChemOperator::GetVoltage()
 mfem::real_t
 EChemOperator::GetVoltageMarquisCorrection()
 {
-  mfem::PWCoefficient ce_pwc;
-  mfem::QuadratureSpace x_qspace(_x_h1space.GetParMesh(), _x_h1space.FEColl()->GetOrder());
+  mfem::QuadratureSpace x_qspace(_x_h1space.GetParMesh(), 2 * _h1_coll.GetOrder());
 
-  ce_pwc.UpdateCoefficient(NE, _ec_gfc);
-  mfem::real_t ce_ne_int = x_qspace.Integrate(ce_pwc);
-  ce_pwc.ZeroCoefficient(NE);
+  mfem::PWCoefficient log_ec_pwc;
+  mfem::TransformedCoefficient log_ec(&const_cast<mfem::GridFunctionCoefficient &>(_ec_gfc),
+                                      [](mfem::real_t ec) { return log(ec); });
 
-  ce_pwc.UpdateCoefficient(PE, _ec_gfc);
-  mfem::real_t ce_pe_int = x_qspace.Integrate(ce_pwc);
-  ce_pwc.ZeroCoefficient(PE);
+  log_ec_pwc.UpdateCoefficient(NE, log_ec);
+  mfem::real_t log_ec_ne_avg = x_qspace.Integrate(log_ec_pwc) * NX / NNE;
+  log_ec_pwc.ZeroCoefficient(NE);
 
-  ce_pwc.UpdateCoefficient(SEP, _ec_gfc);
-  mfem::real_t ce_sep_int = x_qspace.Integrate(ce_pwc);
-  ce_pwc.ZeroCoefficient(SEP);
+  log_ec_pwc.UpdateCoefficient(PE, log_ec);
+  mfem::real_t log_ec_pe_avg = x_qspace.Integrate(log_ec_pwc) * NX / NPE;
+  log_ec_pwc.ZeroCoefficient(PE);
 
-  // Negative electrode, positive electrode and whole-cell x-averaged electrolyte concentration
-  mfem::real_t ce_ne_avg = ce_ne_int * NX / NNE;
-  mfem::real_t ce_pe_avg = ce_pe_int * NX / NPE;
-  mfem::real_t ce_av = ce_ne_int + ce_sep_int + ce_pe_int;
+  // Whole-cell x-averaged electrolyte concentration
+  mfem::real_t ec_avg = x_qspace.Integrate(_ec_gfc);
 
-  // MacInnes concentration overpotential uses log(c_e), not a linear approximation
-  mfem::real_t eta_c = 2.0 * T * (1 - TPLUS) * log(ce_ne_avg / ce_pe_avg);
-  // We also use the average, not the initial, electrolyte concentration
-  mfem::real_t dphie = I / Kappa(ce_av) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
+  // Average log(ec) over each electrode for concentration overpotential
+  mfem::real_t eta_c = 2.0 * T * (1 - TPLUS) * (log_ec_ne_avg - log_ec_pe_avg);
+  // We use the average, not initial, electrolyte concentration for the electrolyte ohmic losses
+  mfem::real_t dphie = I / Kappa(ec_avg) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
   mfem::real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;
