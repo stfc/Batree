@@ -80,9 +80,10 @@ extern const mfem::real_t tab_width; // current collector tab width
 extern const mfem::real_t delta_p; // foil thicknesses of the positive current collector
 extern const mfem::real_t delta_n;
 
-extern const mfem::real_t Acs_p; // cross-sectional area of the top surface of the positive current-collector tab (tab_width*delta_p)
-extern const mfem::real_t Acs_n; // cross-sectional area of the top surface of the negative current-collector tab 
-
+extern const mfem::real_t Acs_p; // cross-sectional area of the top surface of the positive
+                                 // current-collector tab (tab_width*delta_p)
+extern const mfem::real_t
+    Acs_n; // cross-sectional area of the top surface of the negative current-collector tab
 
 // Scalings
 extern const real_t t0; // Time scale.
@@ -152,11 +153,15 @@ extern const real_t RP; // scaled Radius of Positive particle
 extern const real_t SIGP; // Scaled positive electrode conductivity.
 extern const real_t SIGN; // Scaled negative electrode conductivity.
 
-extern const mfem::real_t Acs_p_scale; // scaled cross-sectional area of the top surface of the positive current-collector tab
-extern const mfem::real_t Acs_n_scale; // scaled cross-sectional area of the top surface of the negative current-collector tab
+extern const mfem::real_t Acs_p_scale; // scaled cross-sectional area of the top surface of the
+                                       // positive current-collector tab
+extern const mfem::real_t Acs_n_scale; // scaled cross-sectional area of the top surface of the
+                                       // negative current-collector tab
 
-extern const mfem::real_t delta_p_scale; // scaled foil thicknesses of the  positive current collector
-extern const mfem::real_t delta_n_scale; // scaled foil thicknesses of the  negative current collector
+extern const mfem::real_t
+    delta_p_scale; // scaled foil thicknesses of the  positive current collector
+extern const mfem::real_t
+    delta_n_scale; // scaled foil thicknesses of the  negative current collector
 
 extern const mfem::real_t beta_p; // scaled current-collector resistance
 extern const mfem::real_t beta_n;

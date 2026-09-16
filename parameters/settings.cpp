@@ -106,7 +106,7 @@ mfem::real_t A_area = 1;      // current collector area
 mfem::real_t L0 = 1;          // current-collector scale (\sqrt(A_area))
 mfem::real_t tab_width = 0.1; // collector tab width
 
-mfem::real_t i0 = 0;     // transverse current density scale
+mfem::real_t i0 = 0; // transverse current density scale
 
 mfem::real_t delta_p = 18e-6; //[m] foil thicknesses of the positive current collector
 mfem::real_t delta_n = 15e-6;
@@ -114,14 +114,16 @@ mfem::real_t delta_n = 15e-6;
 mfem::real_t sigma_p = 37.8e+6; // [Sm^{−1}] electrical conductivity of the current collector
 mfem::real_t sigma_n = 59.6e+6;
 
-mfem::real_t Acs_p = 0;      // cross-sectional area of the top surface of the positive current tab
-mfem::real_t Acs_n = 0;      // cross-sectional area of the top surface of the negative current tab
+mfem::real_t Acs_p = 0; // cross-sectional area of the top surface of the positive current tab
+mfem::real_t Acs_n = 0; // cross-sectional area of the top surface of the negative current tab
 
-mfem::real_t delta_p_scale = 0; //scaled foil thicknesses of the positive current collector
-mfem::real_t delta_n_scale = 0; //scaled foil thicknesses of the negative current collector
+mfem::real_t delta_p_scale = 0; // scaled foil thicknesses of the positive current collector
+mfem::real_t delta_n_scale = 0; // scaled foil thicknesses of the negative current collector
 
-mfem::real_t Acs_p_scale = 0; // scaled cross-sectional area of the top surface of the positive current-collector tab
-mfem::real_t Acs_n_scale = 0; // scaled cross-sectional area of the top surface of the negative current-collector tab
+mfem::real_t Acs_p_scale =
+    0; // scaled cross-sectional area of the top surface of the positive current-collector tab
+mfem::real_t Acs_n_scale =
+    0; // scaled cross-sectional area of the top surface of the negative current-collector tab
 
 mfem::real_t beta_p = 0; // current-collector resistance
 mfem::real_t beta_n = 0;
