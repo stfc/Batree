@@ -21,9 +21,13 @@ protected:
 
   HypreParMatrix Mmat;
   HypreParMatrix Kmat;
-  HypreParMatrix Cmat;
+  HypreParMatrix * Mpmat = nullptr;
+  HypreParMatrix * Kpmat = nullptr;
+  HypreParMatrix * Cmat = nullptr;
+  HypreParVector Col;
 
   Vector b; // auxiliary vector
+
 
 public:
   Equation(ParFiniteElementSpace & f,
@@ -35,8 +39,11 @@ public:
 
   const HypreParMatrix & GetM() const { return Mmat; };
   const HypreParMatrix & GetK() const { return Kmat; };
-  const HypreParMatrix & GetC() const { return Cmat; };
+  const HypreParMatrix & GetMp() const { return *Mpmat; };
+  const HypreParMatrix & GetKp() const { return *Kpmat; };
+  const HypreParMatrix & GetC() const { return *Cmat; };
   const Vector & GetZ() const { return b; };
+  const HypreParVector & GetCol() const { return Col; };
 
   virtual void Update(const Coefficient & j) {}
   virtual void Update(const GridFunctionCoefficient & u,
@@ -48,5 +55,8 @@ public:
     delete K;
     delete Q;
     delete C;
+    delete Mpmat;
+    delete Kpmat;
+    delete Cmat;
   }
 };
