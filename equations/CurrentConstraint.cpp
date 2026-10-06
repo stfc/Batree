@@ -5,12 +5,20 @@ void
 CurrentConstraint::Update()
 {
 
-  if (!C)
+  if (!M)
   {
-    C = new ParMixedBilinearForm(&fespace, fespace2);
-    C->AddDomainIntegrator(new MixedScalarMassIntegrator);
-    C->Assemble();
+    M = new ParBilinearForm(fespace2);
+    M->AddDomainIntegrator(new MassIntegrator);
+    M->Assemble(0); // keep sparsity pattern of M and K the same
+    Mpmat = M->ParallelAssemble();
   }
+
+  HypreParVector one(*Mpmat);
+  one = 1.0;
+
+  Col = HypreParVector(fespace2->GetComm(), fespace2->GlobalTrueVSize(), fespace2->GetTrueDofOffsets());
+  Mpmat->Mult(one, Col);
+
 
   if (!Q)
   {
