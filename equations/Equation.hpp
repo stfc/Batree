@@ -45,6 +45,7 @@ public:
   const HypreParMatrix & GetC() const { return *Cmat; };
   const Vector & GetZ() const { return b; };
   const HypreParVector & GetCol() const { return Col; };
+  const HypreParMatrix & GetColMat() const { return *ColMat; };
 
   virtual void Update(const Coefficient & j) {}
   virtual void Update(const GridFunctionCoefficient & u,
