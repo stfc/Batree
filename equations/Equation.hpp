@@ -25,6 +25,7 @@ protected:
   HypreParMatrix * Kpmat = nullptr;
   HypreParMatrix * Cmat = nullptr;
   HypreParVector Col;
+  HypreParMatrix * ColMat = nullptr;
 
   Vector b; // auxiliary vector
 
