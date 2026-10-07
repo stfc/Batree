@@ -24,8 +24,7 @@ protected:
   HypreParMatrix * Mpmat = nullptr;
   HypreParMatrix * Kpmat = nullptr;
   HypreParMatrix * Cmat = nullptr;
-  HypreParVector Col;
-  HypreParMatrix * ColMat = nullptr;
+  HypreParMatrix * Product = nullptr;
 
   Vector b; // auxiliary vector
 
@@ -44,8 +43,7 @@ public:
   const HypreParMatrix & GetKp() const { return *Kpmat; };
   const HypreParMatrix & GetC() const { return *Cmat; };
   const Vector & GetZ() const { return b; };
-  const HypreParVector & GetCol() const { return Col; };
-  const HypreParMatrix & GetColMat() const { return *ColMat; };
+  const HypreParMatrix & GetProduct() const { return *Product; };
 
   virtual void Update(const Coefficient & j) {}
   virtual void Update(const GridFunctionCoefficient & u,
