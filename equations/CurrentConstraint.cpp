@@ -13,29 +13,15 @@ CurrentConstraint::Update()
     Mpmat = M->ParallelAssemble();
   }
 
-  HypreParVector one(*Mpmat);
-  one = 1.0;
-
-  Col = HypreParVector(fespace2->GetComm(), fespace2->GlobalTrueVSize(), fespace2->GetTrueDofOffsets());
-  Mpmat->Mult(one, Col);
 
   // ------------------------------------------------------------
   // Construct ColMat = col as an n2 x 1 HypreParMatrix
   // ------------------------------------------------------------
 
-  MPI_Comm comm = fespace2->GetComm();
-
-  // 1. Get the uniform local row count for this processor
-  int local_nrows = Col.Size(); 
-  const double* col_data = Col.GetData(); // Raw vector values on this rank
-
   // 2. Local SparseMatrix setup: Local rows x 1 column
   // Every processor views this locally as a simple 1-column matrix
-  mfem::SparseMatrix local_mat(local_nrows, 1);
-  for (int i = 0; i < local_nrows; i++)
-  {
-      local_mat.Set(i, 0, col_data[i]);
-  }
+  mfem::SparseMatrix local_mat(fespace2->GetTrueVSize(), 1);
+  local_mat = 1;
   local_mat.Finalize();
 
   // 3. Define global column partitioning (Must be identical on ALL ranks)
@@ -46,8 +32,8 @@ CurrentConstraint::Update()
 
   // 4. Construct the HypreParMatrix cleanly
   // This constructor auto-generates the correct diag, offd, and cmap layout for you.
-  ColMat = new mfem::HypreParMatrix(
-      comm,
+  HypreParMatrix * ColMat = new mfem::HypreParMatrix(
+      fespace2->GetComm(),
       fespace2->GlobalTrueVSize(), // Global row count
       1,                           // Global col count
       fespace2->GetTrueDofOffsets(),// Global row partitioning array
@@ -55,6 +41,7 @@ CurrentConstraint::Update()
       &local_mat
   );
 
+  Product = mfem::ParMult(Mpmat, ColMat);
 
   if (!Q)
   {
