@@ -37,7 +37,7 @@ void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
    delete _Bcc(0, 2);
   _Bcc(0, 2) = _cb->GetC().Transpose();
    delete _Bcc(2, 3);
-  _Bcc(2, 3) = &_cc->GetColMat();
+  _Bcc(2, 3) = &_cc->GetProduct();
   _f.GetBlock(0) = _cb->GetZ();
 }
 
