@@ -25,10 +25,11 @@ def easyplot(ax, x, y, colour, linestyle, label, marker_indx = 1):
     )
 
 # Function to run Batree and extract results from output.
-def run_batree(sim_type, cell, c_rate):
+def run_batree(sim_type, cell, c_rate, s_freq):
 
-    print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.rjust(8) + " | " + c_rate.rjust(4) + "C")
-    cmd = [batree_executable, "-m", sim_type, "-c", cell, "-cr", c_rate]
+    print("Running... Batree | " + sim_type.ljust(4) + " | " + cell.rjust(8) + " | " +
+          c_rate.rjust(4) + "C" + (" | " + s_freq.rjust(4) + "Hz" if float(s_freq) > 0 else ""))
+    cmd = [batree_executable, "-m", sim_type, "-c", cell, "-cr", c_rate, "-sf", s_freq]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     times = []
@@ -46,11 +47,17 @@ def run_batree(sim_type, cell, c_rate):
 
 
 # Function to run PyBAMM and extract results from output.
-def run_pybamm(model, cell, c_rate):
+def run_pybamm(model, cell, c_rate, s_freq):
 
-    print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.rjust(8) + " | " + c_rate.rjust(4) + "C")
-    sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), C_rate=float(c_rate))
-    soln = sim.solve(np.arange(0, 5500))
+    print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.rjust(8) + " | " +
+          c_rate.rjust(4) + "C" + (" | " + s_freq.rjust(4) + "Hz" if float(s_freq) > 0 else ""))
+
+    parameter_values = pybamm.ParameterValues(cell)
+    current_typ = parameter_values["Current function [A]"]
+    current_cos = lambda t : float(c_rate) * current_typ * ((1 + np.cos(4 * np.pi * float(s_freq) * t)) / 2)
+    parameter_values["Current function [A]"] = current_cos
+    sim = pybamm.Simulation(model, parameter_values=parameter_values)
+    soln = sim.solve(np.arange(0, 100000))
 
     time = soln["Time [s]"].entries
     voltage = soln["Voltage [V]"].entries
@@ -58,14 +65,14 @@ def run_pybamm(model, cell, c_rate):
     return time, voltage
 
 # Running simulations and plotting results.
-def run_and_plot(ax, sim_type, pybamm_model, cell, c_rate, colour):
+def run_and_plot(ax, sim_type, pybamm_model, cell, c_rate, colour, s_freq = "0"):
 
     if PLOT_BATREE:
-        time, voltage = run_batree(sim_type, cell, c_rate)
+        time, voltage = run_batree(sim_type, cell, c_rate, s_freq)
         easyplot(ax, time, voltage, colour, ".", f"{sim_type} (Batree)", 15)
 
     if PLOT_PYBAMM:
-        time, voltage = run_pybamm(pybamm_model, cell, c_rate)
+        time, voltage = run_pybamm(pybamm_model, cell, c_rate, s_freq)
         easyplot(ax, time, voltage, colour, "-", f"{sim_type} (PyBaMM)")
 
 
