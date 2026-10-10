@@ -8,7 +8,7 @@ private:
 
 public:
   /// SPM(e)
-  ReactionCurrentCoefficient() : _j_pwcc(mfem::Vector{+I / AN / LNE, 0., -I / AP / LPE}) {}
+  ReactionCurrentCoefficient() : _j_pwcc(3) {}
 
   /// P2D
   ReactionCurrentCoefficient(ExchangeCurrentCoefficient & jex, OverPotentialCoefficient & op)
@@ -17,7 +17,12 @@ public:
   }
 
   /// SPM(e)
-  virtual mfem::PWConstCoefficient & Eval() { return _j_pwcc; }
+  virtual mfem::PWConstCoefficient & Eval()
+  {
+    _j_pwcc(NE) = +I / AN / LNE;
+    _j_pwcc(PE) = -I / AP / LPE;
+    return _j_pwcc;
+  }
 
   /// P2D (and any integrators)
   virtual mfem::real_t Eval(mfem::ElementTransformation & Tr,
@@ -26,6 +31,6 @@ public:
     if (_jex)
       return 2 * _jex->Eval(Tr, ip) * sinh(.5 * _op->Eval(Tr, ip) / T);
     else
-      return _j_pwcc.Eval(Tr, ip);
+      return Eval().Eval(Tr, ip);
   }
 };
