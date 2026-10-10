@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: openmpi
       - name: Checkout batree
         uses: actions/checkout@v7
       - name: Checkout, configure, build and install MFEM
@@ -56,6 +58,8 @@ jobs:
     steps:
       - name: Setup MPI
         uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: openmpi
       - name: Checkout batree
         uses: actions/checkout@v7
       - name: Download batree executable
