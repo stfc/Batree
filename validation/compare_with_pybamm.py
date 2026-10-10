@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import numpy as np
 import pybamm
 import subprocess
 
@@ -48,9 +49,8 @@ def run_batree(sim_type, cell, c_rate):
 def run_pybamm(model, cell, c_rate):
 
     print("Running... PyBaMM | " + str(model.__class__.__name__).ljust(4) + " | " + cell.rjust(8) + " | " + c_rate.rjust(4) + "C")
-    solver = pybamm.IDAKLUSolver(options={"dt_max" : 1})
-    sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), C_rate=float(c_rate), solver=solver)
-    soln = sim.solve([0, 10000])
+    sim = pybamm.Simulation(model, parameter_values=pybamm.ParameterValues(cell), C_rate=float(c_rate))
+    soln = sim.solve(np.arange(0, 5500))
 
     time = soln["Time [s]"].entries
     voltage = soln["Voltage [V]"].entries
