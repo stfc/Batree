@@ -3,14 +3,11 @@ name: Integration Tests
 on: [pull_request, workflow_dispatch]
 
 jobs:
-  Tests:
-    name: ${{ matrix.method }}, ${{ matrix.cell }}, ${{ matrix.ranks }} rank(s), ${{ matrix.os }}
+  Build:
+    name: Build, ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        method: [SPM, SPMe, P2D]
-        cell: [LGM50, Enertech]
-        ranks: [1, 2, 3]
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -38,8 +35,36 @@ jobs:
             MFEM_TPLFLAGS=-I./mfem/build/fetch/hypre/include \
             MFEM_EXT_LIBS="./mfem/build/fetch/hypre/lib/libHYPRE.a \
                            ./mfem/build/fetch/metis/lib/libmetis.a"
+      - name: Upload batree executable
+        uses: actions/upload-artifact@v7
+        with:
+          name: batree-${{ matrix.os }}
+          path: batree
+          if-no-files-found: error
+
+  Test:
+    name: ${{ matrix.method }}, ${{ matrix.cell }}, ${{ matrix.ranks }} rank(s), ${{ matrix.os }}
+    needs: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        method: [SPM, SPMe, P2D]
+        cell: [LGM50, Enertech]
+        ranks: [1, 2, 3]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Setup MPI
+        uses: mpi4py/setup-mpi@v1
+      - name: Checkout batree
+        uses: actions/checkout@v7
+      - name: Download batree executable
+        uses: actions/download-artifact@v8
+        with:
+          name: batree-${{ matrix.os }}
       - name: Run batree and perform diff with gold output
         run: |
+          chmod +x ./batree
           diff <(mpirun -n ${{ matrix.ranks }} ./batree -m ${{ matrix.method }} -c ${{ matrix.cell }} | \
           awk '/^step[[:space:]]+time\[s\][[:space:]]+voltage\[V\][[:space:]]+SoC\[%\]$/ {found=1} found') \
                .github/workflows/${{ matrix.method }}_${{ matrix.cell }}.txt
