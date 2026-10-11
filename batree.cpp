@@ -13,6 +13,7 @@ main(int argc, char * argv[])
   std::string model = "SPM";
   std::string cell = "LGM50";
   mfem::real_t c_rate = 1;
+  mfem::real_t s_freq = 0;
   int order = 1;
   int ode_solver_type = 21;
   mfem::real_t t_final = -1.0;
@@ -23,6 +24,7 @@ main(int argc, char * argv[])
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
   args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50 or Enertech.");
   args.AddOption(&c_rate, "-cr", "--c-rate", "C-rate to run a constant current (dis)charge.");
+  args.AddOption(&s_freq, "-sf", "--s-freq", "Frequency of sinusoidal drive cycle (Hz).");
   args.AddOption(&order, "-o", "--order", "Order (degree) of the finite elements.");
   args.AddOption(&ode_solver_type, "-s", "--ode-solver", mfem::ODESolver::Types.c_str());
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
@@ -59,7 +61,7 @@ main(int argc, char * argv[])
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
   {
-    oper.SetCurrent(c_rate);
+    oper.SetCurrent(c_rate * (1 + std::cos(4 * M_PI * s_freq * (t + dt))) / 2);
     ode_solver->Step(x, t, dt);
     mfem::real_t V = oper.GetVoltage();
 
