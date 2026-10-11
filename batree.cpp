@@ -22,7 +22,7 @@ main(int argc, char * argv[])
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
   args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50 or Enertech.");
-  args.AddOption(&c_rate, "-cr", "--c-rate", "The C-rate to run a constant current (dis)charge");
+  args.AddOption(&c_rate, "-cr", "--c-rate", "C-rate to run a constant current (dis)charge.");
   args.AddOption(&order, "-o", "--order", "Order (degree) of the finite elements.");
   args.AddOption(&ode_solver_type, "-s", "--ode-solver", mfem::ODESolver::Types.c_str());
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
@@ -45,7 +45,7 @@ main(int argc, char * argv[])
   std::unique_ptr<mfem::ODESolver> ode_solver = mfem::ODESolver::Select(ode_solver_type);
 
   // Initialise properties dependent on the electrochemical model, cell type, current and FE order
-  init_settings(model, cell, c_rate, order);
+  init_settings(model, cell, order);
 
   // Initialize the ElectroChemistry operator.
   mfem::real_t t = 0.0;
@@ -59,6 +59,7 @@ main(int argc, char * argv[])
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
   {
+    oper.SetCurrent(c_rate);
     ode_solver->Step(x, t, dt);
     mfem::real_t V = oper.GetVoltage();
 

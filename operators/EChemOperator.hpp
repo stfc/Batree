@@ -110,6 +110,9 @@ public:
   virtual void
   ImplicitSolve(const mfem::real_t dt, const mfem::Vector & x, mfem::Vector & k) override;
 
+  /// Set the current at the time step to be solved for next
+  void SetCurrent(const mfem::real_t & current) { I = current; };
+
   void SetPotentialGridFunctionsFromTrueVectors();
   void SetConcentrationGridFunctionsFromTrueVectors();
   void SetSurfaceConcentration();

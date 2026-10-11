@@ -134,8 +134,8 @@ extern const mfem::real_t SIGN; // Scaled negative electrode conductivity.
 
 // Extras to be properly defined later.
 extern const mfem::real_t CE0; // scaled initial Concentration of Electrolyte
-extern const mfem::real_t I;   // scaled external current
 extern const mfem::real_t T;   // scaled Temperature.
+extern mfem::real_t I;         // scaled external current
 
 extern const mfem::real_t EPS_P;
 extern const mfem::real_t EPS_N;
@@ -164,5 +164,5 @@ Kappa(mfem::real_t ce)
   return CELL->kappa(ce * ce_scale) / kappa_scale;
 }
 
-void init_settings(std::string m, std::string c, mfem::real_t c_rate, int order);
+void init_settings(std::string m, std::string c, int order);
 }
