@@ -25,9 +25,9 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _x.Update(_block_trueOffsets);
   _f.Update(_block_trueOffsets);
   //How to distinguish between the positive and negative current collector?
-  _cbp = new ChargeBalance(PE, h1_fespace_current_collector_positive, &l2_fespace_currents);
-  _cbn = new ChargeBalance(NE, h1_fespace_current_collector_negative, &l2_fespace_currents);
-  _cc = new CurrentConstraint(h1_fespace_current_collector_positive, &l2_fespace_currents);
+  _cbp = new ChargeBalance(h1_fespace_current_collector_positive, l2_fespace_currents, PE);
+  _cbn = new ChargeBalance(h1_fespace_current_collector_negative, l2_fespace_currents, NE);
+  _cc = new CurrentConstraint(l2_fespace_currents);
 }
 
 void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
