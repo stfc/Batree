@@ -37,9 +37,25 @@ void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
   _Bcc(0, 0) = &_cbp->GetK();
    delete _Bcc(0, 2);
   _Bcc(0, 2) = _cbp->GetC().Transpose();
+  _f.GetBlock(0) = _cbp->GetZ();
+
+   delete _Bcc(1, 1);
+  _Bcc(1, 1) = &_cbn->GetK();
+   delete _Bcc(1, 3);
+  _Bcc(1, 2) = _cbn->GetC().Transpose();
+  _f.GetBlock(1) = _cbn->GetZ();
+
+   delete _Bcc(2, 0);
+  _Bcc(2, 0) = &_cbp->GetC();
+   delete _Bcc(2, 1);
+  _Bcc(2, 1) = &_cbn->GetC();
    delete _Bcc(2, 3);
   _Bcc(2, 3) = &_cc->GetProduct();
-  _f.GetBlock(0) = _cbp->GetZ();
+  _f.GetBlock(2) = _cc->GetZ();
+
+   delete _Bcc(3, 2);
+  _Bcc(3, 2) = _cc->GetProduct().Transpose();
+  _f.GetBlock(3) = I;
 }
 
 CurrentCollectorOperator::~CurrentCollectorOperator()
