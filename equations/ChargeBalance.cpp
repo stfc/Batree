@@ -4,7 +4,9 @@
 void
 ChargeBalance::Update()
 {
-  mfem::ConstantCoefficient coeff(-delta_p_scale/beta_p);
+  const real_t frac = particle_region == PE ? -delta_p_scale/beta_p : -delta_n_scale/beta_n;
+
+  mfem::ConstantCoefficient coeff(frac);
 
   if (!K)
   {

@@ -4,8 +4,13 @@
 
 class ChargeBalance : public Equation
 {
+private:
+  const Region particle_region;
 public:
-  using Equation::Equation;
+    ChargeBalance(const Region & region,
+                  ParFiniteElementSpace & f,
+                  ParFiniteElementSpace * f2 = nullptr)
+        : Equation(f, f2), particle_region(region) {}
 
   virtual void Update();
 };
