@@ -21,7 +21,7 @@ ChargeBalance::Update()
 
   if (!C)
   {
-    C = new ParMixedBilinearForm(&fespace, fespace2);
+    C = new ParMixedBilinearForm(&fespace, &l2_fespace);
     C->AddDomainIntegrator(new MixedScalarMassIntegrator(sign));
     C->Assemble(0);
     Cmat = C->ParallelAssemble();
@@ -34,4 +34,10 @@ ChargeBalance::Update()
   }
   Q->Assemble();
   Q->ParallelAssemble(b);
+}
+
+ChargeBalance::~ChargeBalance()
+{
+    delete C;
+    delete Cmat;
 }
