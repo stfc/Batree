@@ -2,7 +2,7 @@
 #include "equations/CurrentConstraint.hpp"
 
 void
-CurrentConstraint::Update()
+CurrentConstraint::Update(const Coefficient & j)
 {
 
   if (!M)
@@ -10,7 +10,7 @@ CurrentConstraint::Update()
     M = new ParBilinearForm(fespace2);
     M->AddDomainIntegrator(new MassIntegrator);
     M->Assemble(0); // keep sparsity pattern of M and K the same
-    Mpmat = M->ParallelAssemble();
+    M->FormSystemMatrix(ess_tdof_list, Mmat);
   }
 
 
@@ -41,13 +41,12 @@ CurrentConstraint::Update()
       &local_mat
   );
 
-  Product = mfem::ParMult(Mpmat, ColMat);
+  Product = mfem::ParMult(&Mmat, ColMat);
 
   if (!Q)
   {
     Q = new ParLinearForm(&fespace);
-    mfem::ConstantCoefficient one(1.0);
-    Q->AddDomainIntegrator(new DomainLFIntegrator(one));
+    Q->AddDomainIntegrator(new DomainLFIntegrator(const_cast<Coefficient &>(j)));
   }
 
   Q->Assemble();

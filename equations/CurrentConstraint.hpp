@@ -7,5 +7,5 @@ class CurrentConstraint : public Equation
 public:
   using Equation::Equation;
 
-  virtual void Update();
+  virtual void Update(const Coefficient & j);
 };
