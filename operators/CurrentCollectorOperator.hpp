@@ -15,7 +15,8 @@ protected:
    ParFiniteElementSpace &h1_fespace_current_collector_negative;
    ParFiniteElementSpace &l2_fespace_currents;
 
-   ChargeBalance * _cb = nullptr;
+   ChargeBalance * _cbp = nullptr; //charge balance for positive current collector
+   ChargeBalance * _cbn = nullptr; //charge balance for negative current collector
    CurrentConstraint * _cc = nullptr;
 
    HypreParMatrix *T; // T = M + dt K
