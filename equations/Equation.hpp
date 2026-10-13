@@ -21,8 +21,6 @@ protected:
 
   HypreParMatrix Mmat;
   HypreParMatrix Kmat;
-  HypreParMatrix * Mpmat = nullptr;
-  HypreParMatrix * Kpmat = nullptr;
   HypreParMatrix * Cmat = nullptr;
   HypreParMatrix * Product = nullptr;
 
@@ -39,8 +37,6 @@ public:
 
   const HypreParMatrix & GetM() const { return Mmat; };
   const HypreParMatrix & GetK() const { return Kmat; };
-  const HypreParMatrix & GetMp() const { return *Mpmat; };
-  const HypreParMatrix & GetKp() const { return *Kpmat; };
   const HypreParMatrix & GetC() const { return *Cmat; };
   const Vector & GetZ() const { return b; };
   const HypreParMatrix & GetProduct() const { return *Product; };
@@ -55,8 +51,6 @@ public:
     delete K;
     delete Q;
     delete C;
-    delete Mpmat;
-    delete Kpmat;
     delete Cmat;
   }
 };
