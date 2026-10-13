@@ -7,12 +7,11 @@ CurrentConstraint::Update(const Coefficient & j)
 
   if (!M)
   {
-    M = new ParBilinearForm(fespace2);
+    M = new ParBilinearForm(&fespace);
     M->AddDomainIntegrator(new MassIntegrator);
     M->Assemble(0); // keep sparsity pattern of M and K the same
     M->FormSystemMatrix(ess_tdof_list, Mmat);
   }
-
 
   // ------------------------------------------------------------
   // Construct ColMat = col as an n2 x 1 HypreParMatrix
@@ -20,7 +19,7 @@ CurrentConstraint::Update(const Coefficient & j)
 
   // 2. Local SparseMatrix setup: Local rows x 1 column
   // Every processor views this locally as a simple 1-column matrix
-  mfem::SparseMatrix local_mat(fespace2->GetTrueVSize(), 1);
+  mfem::SparseMatrix local_mat(fespace.GetTrueVSize(), 1);
   local_mat = 1;
   local_mat.Finalize();
 
@@ -33,10 +32,10 @@ CurrentConstraint::Update(const Coefficient & j)
   // 4. Construct the HypreParMatrix cleanly
   // This constructor auto-generates the correct diag, offd, and cmap layout for you.
   HypreParMatrix * ColMat = new mfem::HypreParMatrix(
-      fespace2->GetComm(),
-      fespace2->GlobalTrueVSize(), // Global row count
+      fespace.GetComm(),
+      fespace.GlobalTrueVSize(), // Global row count
       1,                           // Global col count
-      fespace2->GetTrueDofOffsets(),// Global row partitioning array
+      fespace.GetTrueDofOffsets(),// Global row partitioning array
       col_starts,                  // Global col partitioning array
       &local_mat
   );
