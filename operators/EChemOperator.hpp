@@ -34,13 +34,13 @@ protected:
   ElectrolyteConcentration * _ec = nullptr;
   mfem::Array<SolidConcentration *> _sc;
 
-  /// Gridfunctions defined over _x_h1space (3 macro eqs plus _surface_ concentration)
+  /// Gridfunctions (3 macro eqs defined over _x_h1space plus _surface_ concentration defined over _x_l2space)
   mfem::ParGridFunction _ep_gf;
   mfem::ParGridFunction _sp_gf;
   mfem::ParGridFunction _ec_gf;
   mfem::ParGridFunction _sc_gf;
 
-  /// Coefficients for the gridfunction defined over _x_h1space (3 macro eqs plus _surface_ concentration)
+  /// Coefficients for the gridfunctions above
   mfem::GridFunctionCoefficient _ep_gfc;
   mfem::GridFunctionCoefficient _sp_gfc;
   mfem::GridFunctionCoefficient _ec_gfc;
