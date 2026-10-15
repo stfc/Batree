@@ -278,18 +278,12 @@ EChemOperator::SetSurfaceConcentration()
       MPI_Bcast(&_sc_array[r], 1, MFEM_MPI_REAL_T, _sc[p]->GetParticleRank(), MPI_COMM_WORLD);
     }
   else if (P2D)
-  {
     for (unsigned p = 0; p < NPAR; p++)
     {
       mfem::real_t sc = _sc[p]->SurfaceConcentration(_x);
       if (_sc[p]->IsParticleOwned())
         _sc_gf(_sc[p]->GetParticleDof()) = sc;
     }
-    // Apply prolongation after restriction. Might be unnecessary, but guarantees
-    // all processors have the right information for all their local dofs.
-    _sc_gf.SetTrueVector();
-    _sc_gf.SetFromTrueVector();
-  }
 }
 
 //
