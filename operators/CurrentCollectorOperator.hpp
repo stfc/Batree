@@ -7,8 +7,9 @@
 
 using namespace std;
 using namespace mfem;
-
-class CurrentCollectorOperator : public Operator
+//remove inheritence from Operator class
+// possibly rename bcc by acc
+class CurrentCollectorOperator 
 {
 protected:
    ParFiniteElementSpace &h1_fespace_current_collector_positive;
@@ -19,14 +20,13 @@ protected:
    ChargeBalance * _cbn = nullptr; //charge balance for negative current collector
    CurrentConstraint * _cc = nullptr;
 
-   HypreParMatrix *T; // T = M + dt K
    real_t current_dt;
 
    CGSolver M_solver;    // Krylov solver for inverting the mass matrix M
    HypreSmoother M_prec; // Preconditioner for the mass matrix M
 
-   CGSolver T_solver;    // Implicit solver for T = M + dt K
-   HypreSmoother T_prec; // Preconditioner for the implicit solver
+   CGSolver _Solver;    // Implicit solver for T = M + dt K
+   HypreSmoother _I_prec; // Preconditioner for the implicit solver
 
    mutable Vector b; // auxiliary vector
 
@@ -47,7 +47,7 @@ protected:
 public:
    CurrentCollectorOperator(ParFiniteElementSpace * &f_pos, ParFiniteElementSpace * &f_neg, ParFiniteElementSpace * &f_l2, const unsigned & ndofs, BlockVector & x);
 
-   virtual void Mult(const Vector & x, Vector &y) const;
+   virtual void Solve();
 
    virtual ~CurrentCollectorOperator();
 };

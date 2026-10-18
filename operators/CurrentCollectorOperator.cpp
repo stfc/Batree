@@ -1,17 +1,17 @@
 #include "CurrentCollectorOperator.hpp"
 
 CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_pos, ParFiniteElementSpace *& f_neg, ParFiniteElementSpace *& f_l2, const unsigned & ndofs, BlockVector & x)
-   : Operator(ndofs), h1_fespace_current_collector_positive(*f_pos), h1_fespace_current_collector_negative(*f_neg), l2_fespace_currents(*f_l2), _x(x),
-     T(NULL), T_solver(f_neg->GetComm())
+   : h1_fespace_current_collector_positive(*f_pos), h1_fespace_current_collector_negative(*f_neg), l2_fespace_currents(*f_l2), _x(x),
+     _Solver(f_neg->GetComm())
 {
    const real_t rel_tol = 1e-8;
 
-   T_solver.iterative_mode = false;
-   T_solver.SetRelTol(rel_tol);
-   T_solver.SetAbsTol(0.0);
-   T_solver.SetMaxIter(100);
-   T_solver.SetPrintLevel(0);
-   T_solver.SetPreconditioner(T_prec);
+   _Solver.iterative_mode = false;
+   _Solver.SetRelTol(rel_tol);
+   _Solver.SetAbsTol(0.0);
+   _Solver.SetMaxIter(100);
+   _Solver.SetPrintLevel(0);
+   _Solver.SetPreconditioner(_I_prec);
 
   _block_trueOffsets.SetSize(settings::NMSMDEQS + 1);
   _block_trueOffsets[0] = 0;
@@ -29,8 +29,8 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _cbn = new ChargeBalance(h1_fespace_current_collector_negative, l2_fespace_currents, NE);
   _cc = new CurrentConstraint(l2_fespace_currents);
 }
-
-void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
+//replace Mult with Solve, does not take any parameters!
+void CurrentCollectorOperator::Solve()
 {
    //Is the below correct place to populate the _Bcc matrix? Should it be done in the constructor?
    delete _Bcc(0, 0);
@@ -41,7 +41,7 @@ void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
 
    delete _Bcc(1, 1);
   _Bcc(1, 1) = &_cbn->GetK();
-   delete _Bcc(1, 3);
+   delete _Bcc(1, 2);
   _Bcc(1, 2) = _cbn->GetC().Transpose();
   _f.GetBlock(1) = _cbn->GetZ();
 
@@ -56,9 +56,18 @@ void CurrentCollectorOperator::Mult(const Vector &x, Vector &y) const
    delete _Bcc(3, 2);
   _Bcc(3, 2) = _cc->GetProduct().Transpose();
   _f.GetBlock(3) = I;
+
+   delete _Acc;
+  _Acc = mfem::HypreParMatrixFromBlocks(_Bcc);
+
+   //use 4.2 for voltage cofficient (j)
+   _Solver.SetOperator(*_Acc);
+   _Solver.Mult(_f, _x);
 }
 
 CurrentCollectorOperator::~CurrentCollectorOperator()
 {
-   delete T;
+    for (int i = 0; i < _Bcc.NumRows(); i++)
+      for (int j = 0; j < _Bcc.NumCols(); j++)
+        delete _Bcc(i, j);
 }
