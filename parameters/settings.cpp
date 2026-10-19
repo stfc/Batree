@@ -10,11 +10,11 @@ bool SPM = false;
 bool SPMe = false;
 bool P2D = false;
 
-unsigned NNE = 0;
-unsigned NSEP = 0;
-unsigned NPE = 0;
-unsigned NX = 0;
-unsigned NR = 10;
+unsigned NNE = 0;  // Number of elements in the Negative Electrode
+unsigned NSEP = 0; // Number of elements in the Separator
+unsigned NPE = 0;  // Number of elements in the Positive Electrode
+unsigned NX = 0;   // Number of elements in the X-dimension (i.e Electrolye) (sum of above)
+unsigned NR = 10;  // Number of elements in the R-dimension (i.e Particle)
 
 unsigned NNEPAR = 0;
 unsigned NPEPAR = 0;
@@ -30,103 +30,108 @@ Cell * CELL = nullptr;
 LGM50 LGM50_CELL = LGM50();
 Enertech Enertech_CELL = Enertech();
 
-real_t F = 96485.33289;
-real_t R = 8.314;
-real_t T_ref = 298.15;
+real_t F = 96485.33289; // Faraday constant, C/mol
+real_t R = 8.314;       // Universal gas constant, J/(mol*K)
+real_t T_ref = 298.15;  // Reference temperature, K
 
-real_t t0 = 1.0;
-real_t r0 = 1e-6;
-real_t L = 0;
+real_t t0 = 1.0;  // Time scale.
+real_t r0 = 1e-6; // Length scale (particle)
+real_t L = 0;     // Length scale (particle)
 
-real_t LNE = 0;
-real_t LSEP = 0;
-real_t LPE = 0;
+real_t LNE = 0;  // Length of Negative Electrode
+real_t LSEP = 0; // Length of Separator
+real_t LPE = 0;  // Length of Positive Electrode
 
-real_t a0 = 0;
+real_t a0 = 0; // a0 = inverse of the reference particle radius
 
-real_t tn = 0;
-real_t tp = 0;
+real_t tn = 0; // Negative particle time scale
+real_t tp = 0; // Positive particle time scale
 
 real_t te = 0;
 
-real_t te_scale = 0;
+real_t te_scale = 0; // Electrolyte "particle" time scale
 
-real_t Dn_scale = 0;
-real_t Dp_scale = 0;
-real_t De_scale = 0;
+real_t Dn_scale = 0; // Negative particle diffusion coefficient scale
+real_t Dp_scale = 0; // Positive particle diffusion coefficient scale
+real_t De_scale = 0; // Electrolyte diffusion-coefficient scale
 
+// Transport efficiency (inverse MacMullin number). This is B(x) in Planella, and is absorbed into
+// the definition of kappa_ne/kappa_pe/kappa_sp in JuBat.
 real_t BPE = 0;
 real_t BNE = 0;
 real_t BSEP = 0;
 
-real_t j_scale = 0;
+real_t j_scale = 0; // scaled volumetric reaction current density
+                    //  at the electrode–electrolyte interface
 
-real_t kn_scale = 0;
-real_t kp_scale = 0;
+real_t kn_scale = 0; // Scale for negative-electrode reaction rate
+real_t kp_scale = 0; // Scale for positive-electrode reaction rate
 
-real_t phi_scale = T_ref * R / F;
+real_t phi_scale = T_ref * R / F; // potential scale
 
-real_t tn_scale = 0;
-real_t tp_scale = 0;
+real_t tn_scale = 0; // time scale of negative electrode
+real_t tp_scale = 0; // time scale of positive electrode
 
 real_t ce_scale = 0;
 
-real_t sig_scale = 0;
-real_t kappa_scale = 0;
+real_t sig_scale = 0;   // Electrode conductivity scale.
+real_t kappa_scale = 0; // Electrolyte conductivity scale.
 
-real_t DN = 0;
-real_t DP = 0;
+real_t DN = 0; // scaled diffusion coefficient of each Negative particle
+real_t DP = 0; // scaled diffusion coefficient of each Positive particle
 
-real_t AN = 0;
-real_t AP = 0;
+real_t AN = 0; // scaled surface Area of each Negative particle // later SAN!
+real_t AP = 0; // scaled surface Area of each Positive particle
 
-real_t KN = 0;
-real_t KP = 0;
+real_t KN = 0; // scaled reaction rate of each Negative particle
+real_t KP = 0; // scaled reaction rate of each Positive particle
 
-real_t CN0 = 0;
-real_t CP0 = 0;
+real_t CN0 = 0; // scaled initial Concentration of Negative particle
+real_t CP0 = 0; // scaled initial Concentration of Positive particle
 
-real_t RN = 0;
-real_t RP = 0;
+real_t RN = 0; // scaled Radius of Negative particle
+real_t RP = 0; // scaled Radius of Positive particle
 
-real_t SIGP = 0;
-real_t SIGN = 0;
+real_t SIGP = 0; // Scaled positive electrode conductivity.
+real_t SIGN = 0; // Scaled negative electrode conductivity.
 
-real_t CE0 = 0;
-real_t I = 1.;
-real_t T = 1.0;
+real_t CE0 = 0; // scaled initial Concentration of Electrolyte
+real_t I = 1.;  // scaled external current
+real_t T = 1.0; // scaled Temperature.
 
-real_t EPS_P = 0;
-real_t EPS_N = 0;
+real_t EPS_P = 0; // electrolyte volume fraction (porosity) in the positive electrode
+real_t EPS_N = 0; // electrolyte volume fraction (porosity) in the negative electrode
 real_t EPS_S = 0;
 
-real_t TPLUS = 0;
+real_t TPLUS = 0; //  transference number of lithium ions
 
-mfem::real_t A_area = 1;      // current collector area
-mfem::real_t L0 = 1;          // current-collector scale (\sqrt(A_area))
+mfem::real_t A_area = 0.012;  // current collector area
+mfem::real_t L0;              // current-collector scale (\sqrt(A_area))
 mfem::real_t tab_width = 0.1; // collector tab width
 
-mfem::real_t i0 = 0; // transverse current density scale
+mfem::real_t i0; // transverse current density scale
 
 mfem::real_t delta_p = 18e-6; //[m] foil thicknesses of the positive current collector
-mfem::real_t delta_n = 15e-6;
+mfem::real_t delta_n = 15e-6; //[m] foil thicknesses of the negative current collector
 
-mfem::real_t sigma_p = 37.8e+6; // [Sm^{−1}] electrical conductivity of the current collector
-mfem::real_t sigma_n = 59.6e+6;
+mfem::real_t sigma_p =
+    37.8e+6; // [Sm^{−1}] electrical conductivity of the positive current collector
+mfem::real_t sigma_n =
+    59.6e+6; // [Sm^{−1}] electrical conductivity of the negative current collector
 
-mfem::real_t Acs_p = 0; // cross-sectional area of the top surface of the positive current tab
-mfem::real_t Acs_n = 0; // cross-sectional area of the top surface of the negative current tab
+mfem::real_t Acs_p; // cross-sectional area of the top surface of the positive current tab
+mfem::real_t Acs_n; // cross-sectional area of the top surface of the negative current tab
 
-mfem::real_t delta_p_scale = 0; // scaled foil thicknesses of the positive current collector
-mfem::real_t delta_n_scale = 0; // scaled foil thicknesses of the negative current collector
+mfem::real_t delta_p_scale; // scaled foil thicknesses of the positive current collector
+mfem::real_t delta_n_scale; // scaled foil thicknesses of the negative current collector
 
-mfem::real_t Acs_p_scale =
-    0; // scaled cross-sectional area of the top surface of the positive current-collector tab
-mfem::real_t Acs_n_scale =
-    0; // scaled cross-sectional area of the top surface of the negative current-collector tab
+mfem::real_t Acs_p_scale; // scaled cross-sectional area of the top surface of the positive
+                          // current-collector tab
+mfem::real_t Acs_n_scale; // scaled cross-sectional area of the top surface of the negative
+                          // current-collector tab
 
-mfem::real_t beta_p = 0; // current-collector resistance
-mfem::real_t beta_n = 0;
+mfem::real_t beta_p; // positive current-collector resistance
+mfem::real_t beta_n; // negative current-collector resistance
 
 void
 init_settings(std::string m, std::string c, real_t c_rate, int order)
@@ -190,7 +195,9 @@ init_settings(std::string m, std::string c, real_t c_rate, int order)
   BNE = pow(CELL->eps_n(), CELL->brugg_n());
   BSEP = pow(CELL->eps_s(), CELL->brugg_s());
 
-  j_scale = CELL->I_typ() / a0 / L / CELL->cell_area();
+  j_scale = CELL->I_typ() / a0 / L /
+            CELL->cell_area(); // scaled volumetric reaction
+                               //  current density at the electrode–electrolyte interface
 
   kn_scale = j_scale / CELL->cnmax() / sqrt(CELL->ce0());
   kp_scale = j_scale / CELL->cpmax() / sqrt(CELL->ce0());
