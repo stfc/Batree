@@ -107,7 +107,7 @@ main(int argc, char * argv[])
   ode_solver->Init(oper);
 
   // Collector positive potentials (pp)
-  Mesh current_collector_positive_mesh("../mesh/rectangle_current_collector_pos.msh", 1, 0);
+  Mesh current_collector_positive_mesh("/home/HCHPSE01/nxn02/kxc07-nxn02/Batree/mesh/rectangle_current_collector_pos.msh", 1, 0);
   ParMesh * pp_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_positive_mesh);
 
   // Define the H1 finite element spaces representing potentials in the positive current collector
@@ -119,7 +119,7 @@ main(int argc, char * argv[])
       new ParFiniteElementSpace(pp_pmesh, &fe_current_collector_positive_coll);
 
   // Collector negative potentials (np)
-  Mesh current_collector_negative_mesh("../mesh/rectangle_current_collector_neg.msh", 1, 0);
+  Mesh current_collector_negative_mesh("/home/HCHPSE01/nxn02/kxc07-nxn02/Batree/mesh/rectangle_current_collector_neg.msh", 1, 0);
   ParMesh * np_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_negative_mesh);
 
   // Define the H1 finite element spaces representing potentials in the negative current collector
