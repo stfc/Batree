@@ -20,7 +20,9 @@ CurrentConstraint::Update(const Coefficient & j)
   // 2. Local SparseMatrix setup: Local rows x 1 column
   // Every processor views this locally as a simple 1-column matrix
   mfem::SparseMatrix local_mat(fespace.GetTrueVSize(), 1);
-  local_mat = 1;
+  //local_mat = 1;
+  for (int i = 0; i < fespace.GetTrueVSize(); i++)
+    local_mat.Set(i, 0, 1.0);
   local_mat.Finalize();
 
   // 3. Define global column partitioning (Must be identical on ALL ranks)
