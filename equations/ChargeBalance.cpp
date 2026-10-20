@@ -25,22 +25,31 @@ ChargeBalance::Update()
     C = new ParMixedBilinearForm(&fespace, &l2_fespace);
     C->AddDomainIntegrator(new MixedScalarMassIntegrator(sign));
     C->Assemble(0);
+    C->Finalize();
     Cmat = C->ParallelAssemble();
   }
 
-  if (!Q)
+  ParMesh *pmesh = fespace.GetParMesh();
+
+  const int max_bdr_attr = pmesh->bdr_attributes.Max();
+  Array<int> bdr_marker(max_bdr_attr);
+
+ if (!Q)
   {
     Q = new ParLinearForm(&fespace);
-    ParMesh * pmesh = fespace.GetParMesh();
-    Array<int> bdr_marker(pmesh->bdr_attributes.Max());
+
+    //bdr_marker.UseDevice(false);  // Here
     bdr_marker = 0;
-    // Gmsh physical group "protrusion_top" has tag 3
+
+    // Gmsh physical group "protrusion_top" has boundary attribute 3
     bdr_marker[3 - 1] = 1;
-    Q->AddBoundaryIntegrator(new BoundaryLFIntegrator(proc),
-                             bdr_marker);
+
+    Q->AddBoundaryIntegrator(
+        new BoundaryLFIntegrator(proc), bdr_marker);
   }
-  Q->Assemble();
-  Q->ParallelAssemble(b);
+
+Q->Assemble();
+Q->ParallelAssemble(b);
 }
 
 ChargeBalance::~ChargeBalance()
