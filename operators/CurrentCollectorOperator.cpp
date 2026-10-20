@@ -27,6 +27,9 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _block_trueOffsets[3] = l2_fespace_currents.GetTrueVSize();
   _block_trueOffsets[4] = 1;
 
+  std::cout << "size of _block_trueOffsets = " << _block_trueOffsets[0] << ", " << _block_trueOffsets[1] << ", " << _block_trueOffsets[2] << ", "
+            << _block_trueOffsets[3] << ", " << _block_trueOffsets[4] << std::endl;
+
   _block_trueOffsets.PartialSum();
 
   _x.Update(_block_trueOffsets);
@@ -35,42 +38,154 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _cbp = new ChargeBalance(h1_fespace_current_collector_positive, l2_fespace_currents, PE);
   _cbn = new ChargeBalance(h1_fespace_current_collector_negative, l2_fespace_currents, NE);
   _cc = new CurrentConstraint(l2_fespace_currents);
+
+  _Bcc = nullptr;
+
+   std::cout << "CurrentCollectorOperator constructed" << std::endl;
+  _cbp->Update();
+  _cbn->Update();
+   mfem::ConstantCoefficient voltage(4.2/phi_scale); 
+  _cc->Update(voltage);
+  Solve(); 
+  std::cout << "Solve completed" << std::endl;
 }
 // replace Mult with Solve, does not take any parameters!
 void
 CurrentCollectorOperator::Solve()
-{
-  // Is the below correct place to populate the _Bcc matrix? Should it be done in the constructor?
-  delete _Bcc(0, 0);
+{   
   _Bcc(0, 0) = &_cbp->GetK();
   delete _Bcc(0, 2);
   _Bcc(0, 2) = _cbp->GetC().Transpose();
+
   _f.GetBlock(0) = _cbp->GetZ();
 
-  delete _Bcc(1, 1);
   _Bcc(1, 1) = &_cbn->GetK();
   delete _Bcc(1, 2);
   _Bcc(1, 2) = _cbn->GetC().Transpose();
+
   _f.GetBlock(1) = _cbn->GetZ();
 
-  delete _Bcc(2, 0);
   _Bcc(2, 0) = &_cbp->GetC();
-  delete _Bcc(2, 1);
   _Bcc(2, 1) = &_cbn->GetC();
-  delete _Bcc(2, 3);
   _Bcc(2, 3) = &_cc->GetProduct();
+
   _f.GetBlock(2) = _cc->GetZ();
 
-  delete _Bcc(3, 2);
+   delete _Bcc(3, 2);
   _Bcc(3, 2) = _cc->GetProduct().Transpose();
+
   _f.GetBlock(3) = I;
+
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+        std::cout << "_Bcc(" << i << "," << j << ") = "
+                  << static_cast<const void *>(_Bcc(i, j))
+                  << '\n';
+    }
+  }
+
+  for (int i = 0; i < _Bcc.NumRows(); i++)
+{
+    for (int j = 0; j < _Bcc.NumCols(); j++)
+    {
+        const HypreParMatrix * block = _Bcc(i, j);
+
+        if (block != nullptr)
+        {
+            std::cout << "_Bcc(" << i << "," << j << ") : "
+                      << block->NumRows() << " x "
+                      << block->NumCols() << '\n';
+        }
+        else
+        {
+            std::cout << "_Bcc(" << i << "," << j << ") : null\n";
+        }
+    }
+}
+
+
+
+  // ============================================================
+  // DEBUG: Check block dimensions and matrix norms
+  // ============================================================
+
+  std::cout << "\n===== Current Collector Matrix Diagnostics =====\n";
+
+  std::cout << "Kp = "
+            << _cbp->GetK().GetGlobalNumRows()
+            << " x "
+            << _cbp->GetK().GetGlobalNumCols()
+            << '\n';
+
+  std::cout << "Kn = "
+            << _cbn->GetK().GetGlobalNumRows()
+            << " x "
+            << _cbn->GetK().GetGlobalNumCols()
+            << '\n';
+
+  std::cout << "Cp = "
+            << _cbp->GetC().GetGlobalNumRows()
+            << " x "
+            << _cbp->GetC().GetGlobalNumCols()
+            << '\n';
+
+  std::cout << "Cn = "
+            << _cbn->GetC().GetGlobalNumRows()
+            << " x "
+            << _cbn->GetC().GetGlobalNumCols()
+            << '\n';
+
+  std::cout << "P = "
+            << _cc->GetProduct().GetGlobalNumRows()
+            << " x "
+            << _cc->GetProduct().GetGlobalNumCols()
+            << '\n';
+
+  std::cout << "||Kp|| = " << _cbp->GetK().FNorm() << '\n';
+  std::cout << "||Kn|| = " << _cbn->GetK().FNorm() << '\n';
+  std::cout << "||Cp|| = " << _cbp->GetC().FNorm() << '\n';
+  std::cout << "||Cn|| = " << _cbn->GetC().FNorm() << '\n';
+  std::cout << "||P||  = " << _cc->GetProduct().FNorm() << '\n';
+
+  std::cout << "===============================================\n";
+
+
+  // ============================================================
+  // Construct the global block matrix
+  // ============================================================
 
   delete _Acc;
   _Acc = mfem::HypreParMatrixFromBlocks(_Bcc);
 
+// Check symmetry: ||A - A^T|| / ||A||
+HypreParMatrix * AT = _Acc->Transpose();
+
+HypreParMatrix * A_minus_AT = Add(1.0, *_Acc, -1.0, *AT);
+
+const real_t norm_A = _Acc->FNorm();
+const real_t norm_diff = A_minus_AT->FNorm();
+
+const real_t symmetry_error =
+    norm_diff / std::max(norm_A, std::numeric_limits<real_t>::epsilon());
+
+
+    std::cout << "||A||_F = " << norm_A << '\n';
+    std::cout << "||A - A^T||_F = " << norm_diff << '\n';
+    std::cout << "Relative symmetry error = " << symmetry_error << '\n';
+
+
+delete A_minus_AT;
+delete AT;
+
   // use 4.2 for voltage cofficient (j)
-  _Solver.SetOperator(*_Acc);
-  _Solver.Mult(_f, _x);
+_Solver.SetOperator(*_Acc);
+_Solver.Mult(_f, _x);
+
+//MUMPSSolver direct_solver(_Acc->GetComm());
+//direct_solver.SetOperator(*_Acc);
+//direct_solver.Mult(_f, _x);
 }
 
 CurrentCollectorOperator::~CurrentCollectorOperator()
@@ -78,4 +193,10 @@ CurrentCollectorOperator::~CurrentCollectorOperator()
   for (int i = 0; i < _Bcc.NumRows(); i++)
     for (int j = 0; j < _Bcc.NumCols(); j++)
       delete _Bcc(i, j);
+
+    delete _Acc;
+
+    delete _cbp;
+    delete _cbn;
+    delete _cc;
 }
