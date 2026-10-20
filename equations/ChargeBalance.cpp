@@ -31,7 +31,13 @@ ChargeBalance::Update()
   if (!Q)
   {
     Q = new ParLinearForm(&fespace);
-    Q->AddDomainIntegrator(new DomainLFIntegrator(proc));
+    ParMesh * pmesh = fespace.GetParMesh();
+    Array<int> bdr_marker(pmesh->bdr_attributes.Max());
+    bdr_marker = 0;
+    // Gmsh physical group "protrusion_top" has tag 3
+    bdr_marker[3 - 1] = 1;
+    Q->AddBoundaryIntegrator(new BoundaryLFIntegrator(proc),
+                             bdr_marker);
   }
   Q->Assemble();
   Q->ParallelAssemble(b);
