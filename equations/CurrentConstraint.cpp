@@ -31,7 +31,7 @@ CurrentConstraint::Update(const Coefficient & j)
 
   // 4. Construct the HypreParMatrix cleanly
   // This constructor auto-generates the correct diag, offd, and cmap layout for you.
-  HypreParMatrix * ColMat =
+  ColMat =
       new mfem::HypreParMatrix(fespace.GetComm(),
                                fespace.GlobalTrueVSize(),   // Global row count
                                1,                           // Global col count
