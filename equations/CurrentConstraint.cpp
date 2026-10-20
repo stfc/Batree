@@ -31,14 +31,13 @@ CurrentConstraint::Update(const Coefficient & j)
 
   // 4. Construct the HypreParMatrix cleanly
   // This constructor auto-generates the correct diag, offd, and cmap layout for you.
-  HypreParMatrix * ColMat = new mfem::HypreParMatrix(
-      fespace.GetComm(),
-      fespace.GlobalTrueVSize(), // Global row count
-      1,                           // Global col count
-      fespace.GetTrueDofOffsets(),// Global row partitioning array
-      col_starts,                  // Global col partitioning array
-      &local_mat
-  );
+  HypreParMatrix * ColMat =
+      new mfem::HypreParMatrix(fespace.GetComm(),
+                               fespace.GlobalTrueVSize(),   // Global row count
+                               1,                           // Global col count
+                               fespace.GetTrueDofOffsets(), // Global row partitioning array
+                               col_starts,                  // Global col partitioning array
+                               &local_mat);
 
   Product = mfem::ParMult(&Mmat, ColMat);
 
@@ -50,5 +49,4 @@ CurrentConstraint::Update(const Coefficient & j)
 
   Q->Assemble();
   Q->ParallelAssemble(b);
-  
 }

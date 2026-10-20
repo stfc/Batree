@@ -23,12 +23,8 @@ protected:
 
   Vector b; // auxiliary vector
 
-
 public:
-  Equation(ParFiniteElementSpace & f)
-    : fespace(f),
-      b(f.GetTrueVSize())
-  {}
+  Equation(ParFiniteElementSpace & f) : fespace(f), b(f.GetTrueVSize()) {}
 
   const HypreParMatrix & GetM() const { return Mmat; };
   const HypreParMatrix & GetK() const { return Kmat; };
@@ -36,8 +32,7 @@ public:
   const HypreParMatrix & GetProduct() const { return *Product; };
 
   virtual void Update(const Coefficient & j) {}
-  virtual void Update(const GridFunctionCoefficient & u,
-                      const Coefficient & j) {}
+  virtual void Update(const GridFunctionCoefficient & u, const Coefficient & j) {}
 
   virtual ~Equation()
   {

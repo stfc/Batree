@@ -106,7 +106,7 @@ main(int argc, char * argv[])
   oper.SetImplicitVariableType(TimeDependentOperator::STATE);
   ode_solver->Init(oper);
 
-  //Collector positive potentials (pp)
+  // Collector positive potentials (pp)
   Mesh current_collector_positive_mesh("../mesh/rectangle_current_collector_pos.msh", 1, 0);
   ParMesh * pp_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_positive_mesh);
 
@@ -115,9 +115,10 @@ main(int argc, char * argv[])
 
   // Create FiniteElementSpace for the positive current collector
   ParFiniteElementSpace * current_collector_positive_h1space;
-  current_collector_positive_h1space = new ParFiniteElementSpace(pp_pmesh, &fe_current_collector_positive_coll);
+  current_collector_positive_h1space =
+      new ParFiniteElementSpace(pp_pmesh, &fe_current_collector_positive_coll);
 
-  //Collector negative potentials (np)
+  // Collector negative potentials (np)
   Mesh current_collector_negative_mesh("../mesh/rectangle_current_collector_neg.msh", 1, 0);
   ParMesh * np_pmesh = new ParMesh(MPI_COMM_WORLD, current_collector_negative_mesh);
 
@@ -126,33 +127,35 @@ main(int argc, char * argv[])
 
   // Create FiniteElementSpace for the negative current collector
   ParFiniteElementSpace * current_collector_negative_h1space;
-  current_collector_negative_h1space = new ParFiniteElementSpace(np_pmesh, &fe_current_collector_negative_coll);
+  current_collector_negative_h1space =
+      new ParFiniteElementSpace(np_pmesh, &fe_current_collector_negative_coll);
 
-  //This is the domain attribute (without tab) for the positive/negative current collector
+  // This is the domain attribute (without tab) for the positive/negative current collector
   mfem::Array<int> domain_attributes;
-  domain_attributes.Append(1); 
+  domain_attributes.Append(1);
 
   // domain currents mesh
-  ParSubMesh dc_pmesh_currents(
-    ParSubMesh::CreateFromDomain(*pp_pmesh, domain_attributes)
-  );
+  ParSubMesh dc_pmesh_currents(ParSubMesh::CreateFromDomain(*pp_pmesh, domain_attributes));
 
-  // Define the L2 finite element spaces representing currents in the positive/negative current collector
+  // Define the L2 finite element spaces representing currents in the positive/negative current
+  // collector
   L2_FECollection l2_fe_coll(0, dc_pmesh_currents.Dimension());
 
   // Create FiniteElementSpace for currents in the positive/negative current collector
   ParFiniteElementSpace * current_l2space;
   current_l2space = new ParFiniteElementSpace(&dc_pmesh_currents, &l2_fe_coll);
-  
-  HYPRE_BigInt fe_msmd_size_owned = 
-  current_collector_positive_h1space->GetTrueVSize() + 
-  current_collector_negative_h1space->GetTrueVSize() + 
-  current_l2space->GetTrueVSize() + 
-  1;
-  // The last one is for the scaler dof for the reference potential 
+
+  HYPRE_BigInt fe_msmd_size_owned = current_collector_positive_h1space->GetTrueVSize() +
+                                    current_collector_negative_h1space->GetTrueVSize() +
+                                    current_l2space->GetTrueVSize() + 1;
+  // The last one is for the scaler dof for the reference potential
 
   mfem::BlockVector y;
-  CurrentCollectorOperator current_oper(current_collector_positive_h1space, current_collector_negative_h1space, current_l2space, fe_msmd_size_owned, y);
+  CurrentCollectorOperator current_oper(current_collector_positive_h1space,
+                                        current_collector_negative_h1space,
+                                        current_l2space,
+                                        fe_msmd_size_owned,
+                                        y);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
