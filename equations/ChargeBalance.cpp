@@ -20,14 +20,19 @@ ChargeBalance::Update()
     K->FormSystemMatrix(ess_tdof_list, Kmat);
   }
 
+  Kmat.Print("Kmat");
+
   if (!C)
   {
     C = new ParMixedBilinearForm(&fespace, &l2_fespace);
     C->AddDomainIntegrator(new MixedScalarMassIntegrator(sign));
     C->Assemble(0);
-    C->Finalize();
-    Cmat = C->ParallelAssemble();
+    //(trial => H1, test => L2)
+    Array<int> ess_tdof_list_l2;
+    C->FormRectangularSystemMatrix(ess_tdof_list, ess_tdof_list_l2, Cmat);
   }
+
+   Cmat.Print("Cmat");
 
   ParMesh *pmesh = fespace.GetParMesh();
 
@@ -36,8 +41,11 @@ ChargeBalance::Update()
 
  if (!Q)
   {
+    
     Q = new ParLinearForm(&fespace);
 
+    if(particle_region == PE)
+    {
     //bdr_marker.UseDevice(false);  // Here
     bdr_marker = 0;
 
@@ -46,6 +54,7 @@ ChargeBalance::Update()
 
     Q->AddBoundaryIntegrator(
         new BoundaryLFIntegrator(proc), bdr_marker);
+    }
   }
 
 Q->Assemble();
@@ -55,5 +64,4 @@ Q->ParallelAssemble(b);
 ChargeBalance::~ChargeBalance()
 {
   delete C;
-  delete Cmat;
 }
