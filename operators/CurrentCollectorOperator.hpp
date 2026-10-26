@@ -25,7 +25,8 @@ protected:
   CGSolver M_solver;    // Krylov solver for inverting the mass matrix M
   HypreSmoother M_prec; // Preconditioner for the mass matrix M
 
-  CGSolver _Solver;      // Implicit solver for T = M + dt K
+  //CGSolver _Solver;      // Implicit solver for T = M + dt K
+  GMRESSolver _Solver;      // GMRES solver for the block system
   HypreSmoother _I_prec; // Preconditioner for the implicit solver
 
   mutable Vector b; // auxiliary vector

@@ -16,8 +16,9 @@ CurrentCollectorOperator::CurrentCollectorOperator(ParFiniteElementSpace *& f_po
   _Solver.iterative_mode = false;
   _Solver.SetRelTol(rel_tol);
   _Solver.SetAbsTol(0.0);
-  _Solver.SetMaxIter(100);
-  _Solver.SetPrintLevel(0);
+  _Solver.SetMaxIter(500);
+  _Solver.SetPrintLevel(1);
+  _Solver.SetKDim(50);
   _Solver.SetPreconditioner(_I_prec);
 
   _block_trueOffsets.SetSize(settings::NMSMDEQS + 1);
@@ -180,12 +181,29 @@ delete A_minus_AT;
 delete AT;
 
   // use 4.2 for voltage cofficient (j)
-_Solver.SetOperator(*_Acc);
-_Solver.Mult(_f, _x);
+//_Solver.SetOperator(*_Acc);
+//Solver.Mult(_f, _x);
 
-//MUMPSSolver direct_solver(_Acc->GetComm());
-//direct_solver.SetOperator(*_Acc);
-//direct_solver.Mult(_f, _x);
+std::cout << "\n===== RHS vector f =====\n";
+
+for (int i = 0; i < 4; i++)
+{
+    std::cout << "\n===== RHS block " << i << " =====\n";
+    _f.GetBlock(i).Print(std::cout);
+}
+
+MUMPSSolver direct_solver(_Acc->GetComm());
+direct_solver.SetOperator(*_Acc);
+direct_solver.Mult(_f, _x);
+
+std::cout << "\n===== Solution =====\n";
+
+for (int i = 0; i < 4; i++)
+{
+    std::cout << "\n===== Solution block " << i << " =====\n";
+    _x.GetBlock(i).Print(std::cout);
+}
+
 }
 
 CurrentCollectorOperator::~CurrentCollectorOperator()
