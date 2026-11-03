@@ -9,16 +9,23 @@ MFEM_LIB_FILE = mfem_is_not_built
 
 EXECUTABLES = batree
 
-OP_SRC_FILES = EChemOperator.cpp
-OP_INC_FILES = EChemOperator.hpp
+OP_SRC_FILES = EChemOperator.cpp \
+               CurrentCollectorOperator.cpp
+OP_INC_FILES = EChemOperator.hpp \
+               CurrentCollectorOperator.hpp \
+               LocalModel.hpp
 EQ_SRC_FILES = SolidConcentration.cpp \
                ElectrolyteConcentration.cpp \
                SolidPotential.cpp \
-               ElectrolytePotential.cpp
+               ElectrolytePotential.cpp \
+               CurrentConstraint.cpp \
+               ChargeBalance.cpp
 EQ_INC_FILES = SolidConcentration.hpp \
                ElectrolyteConcentration.hpp \
                SolidPotential.hpp \
                ElectrolytePotential.hpp \
+               CurrentConstraint.hpp \
+               ChargeBalance.hpp \
                Equation.hpp
 CF_INC_FILES = ExchangeCurrentCoefficient.hpp \
                ReactionCurrentCoefficient.hpp \
@@ -47,8 +54,10 @@ INC_FILES = $(addprefix equations/, $(EQ_INC_FILES)) \
 
 all: $(EXECUTABLES)
 
+# BATREE_DIR records this folder (where make runs) so batree can find mesh/ from any working
+# directory. If the project folder moves, run 'make clean && make'.
 batree: $(SRC_FILES) $(INC_FILES) $(MFEM_LIB_FILE) $(CONFIG_MK)
-	$(MFEM_CXX) $(MFEM_FLAGS) -Wall -Wpedantic -Werror -I. $(SRC_FILES) -o $@ $(MFEM_LIBS)
+	$(MFEM_CXX) $(MFEM_FLAGS) -Wall -Wpedantic -Werror -I. -DBATREE_DIR=\"$(CURDIR)\" $(SRC_FILES) -o $@ $(MFEM_LIBS)
 
 # Generate an error message if the MFEM library is not built and exit
 $(MFEM_LIB_FILE):

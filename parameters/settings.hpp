@@ -53,10 +53,11 @@ extern const unsigned NNEPAR; // Number of Negative Electrode PARticle
 extern const unsigned NPEPAR; // Number of Positive Electrode PARticle
 extern const unsigned NPAR;   // Total number of  PARticles (Sum of the above two)
 
-extern const unsigned NMACROP; // Number of Macro Potential equations //later change to NMACROPEQS!
-extern const unsigned NMACROC; // Number of Macro Concentration equations
-extern const unsigned NMACRO;  // Total Number of Macro Equations (Sum of the above two)
-extern const unsigned NEQS;    // Total Number of Equations in the System
+extern const unsigned NMACROP;  // Number of Macro Potential equations //later change to NMACROPEQS!
+extern const unsigned NMACROC;  // Number of Macro Concentration equations
+extern const unsigned NMACRO;   // Total Number of Macro Equations (Sum of the above two)
+extern const unsigned NEQS;     // Total Number of Equations in the System
+extern const unsigned NMSMDEQS; // Total Number of MSMD Equations in the System
 
 extern Cell * CELL;                  // Chosen cell
 extern const LGM50 LGM50_CELL;       // LGM50 cell
@@ -67,16 +68,31 @@ extern const mfem::real_t F;     // Faraday constant, C/mol
 extern const mfem::real_t R;     // Universal gas constant, J/(mol*K)
 extern const mfem::real_t T_ref; // Reference temperature, K
 
+extern const mfem::real_t A_area; // current collector area
+
+extern const mfem::real_t sigma_p; // electrical conductivity of the positive current collector
+extern const mfem::real_t sigma_n; // electrical conductivity of the negative current collector
+
+extern const mfem::real_t tab_width; // current collector tab width
+
+extern const mfem::real_t delta_p; // foil thicknesses of the positive current collector
+extern const mfem::real_t delta_n; // foil thicknesses of the negative current collector
+
+extern const mfem::real_t Acs_p; // cross-sectional area of the top surface of the positive
+                                 // current-collector tab (tab_width*delta_p)
+extern const mfem::real_t Acs_n; // cross-sectional area of the top surface of the negative
+                                 // current-collector tab
+
 // Scalings
 extern const mfem::real_t t0; // Time scale.
 extern const mfem::real_t r0; // Length scale (particle)
-extern const mfem::real_t L;  // Length scale (cell)
+extern const mfem::real_t L;  // Length scale (particle)
 
 extern const mfem::real_t LNE;  // Length of Negative Electrode
 extern const mfem::real_t LSEP; // Length of Separator
 extern const mfem::real_t LPE;  // Length of Positive Electrode
 
-extern const mfem::real_t a0;
+extern const mfem::real_t a0; // a0 = inverse of the reference particle radius
 
 extern const mfem::real_t tn; // Negative particle time scale.
 extern const mfem::real_t tp; // Positive particle time scale.
@@ -88,7 +104,10 @@ extern const mfem::real_t te_scale;
 extern const mfem::real_t Dn_scale; // Negative particle diffusion coefficient scale. Units of m^2/s
 extern const mfem::real_t Dp_scale; // Positive particle diffusion coefficient scale. Units of m^2/s
 
-extern const mfem::real_t De_scale;
+extern const mfem::real_t De_scale; // electrolyte diffusion-coefficient scale
+
+extern const mfem::real_t L0; // current-collector scale (\sqrt(A_area))
+extern const mfem::real_t i0; // transverse current density scale
 
 // Transport efficiency (inverse MacMullin number). This is B(x) in Planella, and is absorbed into
 // the definition of kappa_ne/kappa_pe/kappa_sp in JuBat.
@@ -96,10 +115,11 @@ extern const mfem::real_t BPE;
 extern const mfem::real_t BNE;
 extern const mfem::real_t BSEP;
 
-extern const mfem::real_t j_scale;
+extern const mfem::real_t j_scale; // scaled volumetric reaction current density
+                                   // at the electrode–electrolyte interface
 
-extern const mfem::real_t kn_scale;
-extern const mfem::real_t kp_scale;
+extern const mfem::real_t kn_scale; // Scale for negative-electrode reaction rate
+extern const mfem::real_t kp_scale; // Scale for positive-electrode reaction rate
 
 extern const mfem::real_t phi_scale; // potential scale
 
@@ -132,16 +152,29 @@ extern const mfem::real_t RP; // scaled Radius of Positive particle
 extern const mfem::real_t SIGP; // Scaled positive electrode conductivity.
 extern const mfem::real_t SIGN; // Scaled negative electrode conductivity.
 
+extern const mfem::real_t Acs_p_scale; // scaled cross-sectional area of the top surface of the
+                                       // positive current-collector tab
+extern const mfem::real_t Acs_n_scale; // scaled cross-sectional area of the top surface of the
+                                       // negative current-collector tab
+
+extern const mfem::real_t delta_p_scale; // scaled foil thicknesses of the positive
+                                         // current collector
+extern const mfem::real_t delta_n_scale; // scaled foil thicknesses of the negative
+                                         // current collector
+
+extern const mfem::real_t beta_p; // scaled resistance of the positive current-collector
+extern const mfem::real_t beta_n; // scaled resistance of the negative current-collector
+
 // Extras to be properly defined later.
 extern const mfem::real_t CE0; // scaled initial Concentration of Electrolyte
 extern const mfem::real_t T;   // scaled Temperature.
 extern mfem::real_t I;         // scaled external current
 
-extern const mfem::real_t EPS_P;
-extern const mfem::real_t EPS_N;
+extern const mfem::real_t EPS_P; // electrolyte volume fraction (porosity) in the positive electrode
+extern const mfem::real_t EPS_N; // electrolyte volume fraction (porosity) in the negative electrode
 extern const mfem::real_t EPS_S;
 
-extern const mfem::real_t TPLUS;
+extern const mfem::real_t TPLUS; // transference number of lithium ions
 
 inline const mfem::real_t
 UN(mfem::real_t ce)

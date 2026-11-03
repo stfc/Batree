@@ -1,0 +1,55 @@
+
+#include "equations/CurrentConstraint.hpp"
+
+void
+CurrentConstraint::Update(const mfem::Coefficient & j)
+{
+
+  if (!M)
+  {
+    M = new mfem::ParBilinearForm(&fespace);
+    M->AddDomainIntegrator(new mfem::MassIntegrator);
+    M->Assemble(0); // keep sparsity pattern of M and K the same
+    M->FormSystemMatrix(ess_tdof_list, Mmat);
+  }
+
+  // ------------------------------------------------------------
+  // Construct ColMat = col as an n2 x 1 HypreParMatrix
+  // ------------------------------------------------------------
+
+  // 2. Local SparseMatrix setup: Local rows x 1 column
+  // Every processor views this locally as a simple 1-column matrix
+  mfem::SparseMatrix local_mat(fespace.GetTrueVSize(), 1);
+  // local_mat = 1;
+  for (int i = 0; i < fespace.GetTrueVSize(); i++)
+    local_mat.Set(i, 0, 1.0);
+  local_mat.Finalize();
+
+  // 3. Define global column partitioning (Must be identical on ALL ranks)
+  // Rank 0 owns global column 0. All other ranks own 0 columns.
+  HYPRE_BigInt col_starts[2];
+  col_starts[0] = 0;
+  col_starts[1] = 1;
+
+  // 4. Construct the HypreParMatrix cleanly
+  // This constructor auto-generates the correct diag, offd, and cmap layout for you.
+  ColMat = new mfem::HypreParMatrix(fespace.GetComm(),
+                                    fespace.GlobalTrueVSize(),   // Global row count
+                                    1,                           // Global col count
+                                    fespace.GetTrueDofOffsets(), // Global row partitioning array
+                                    col_starts,                  // Global col partitioning array
+                                    &local_mat);
+
+  Product = mfem::ParMult(&Mmat, ColMat);
+
+  Product->Print("Product");
+
+  if (!Q)
+  {
+    Q = new mfem::ParLinearForm(&fespace);
+    Q->AddDomainIntegrator(new mfem::DomainLFIntegrator(const_cast<mfem::Coefficient &>(j)));
+  }
+
+  Q->Assemble();
+  Q->ParallelAssemble(b);
+}
