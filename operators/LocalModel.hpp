@@ -22,19 +22,19 @@ public:
       mfem::mfem_error("LocalModel: type must be 'linear' or 'nonlinear'.");
   }
 
-  /// V(e) = V̄ₑ(i(e)) and R(e) = −dV̄ₑ/di at i(e), for every local element e.
-  void Eval(const mfem::Vector & i, mfem::Vector & V, mfem::Vector & R) const
+  /// Vbar(e) = V̄ₑ(i(e)) and Rbar(e) = −dV̄ₑ/di at i(e), for every local element e.
+  void Eval(const mfem::Vector & i, mfem::Vector & Vbar, mfem::Vector & Rbar) const
   {
-    V.SetSize(i.Size());
-    R.SetSize(i.Size());
+    Vbar.SetSize(i.Size());
+    Rbar.SetSize(i.Size());
     for (int e = 0; e < i.Size(); e++)
     {
-      V(e) = _ocv - _R0 * i(e);
-      R(e) = _R0;
+      Vbar(e) = _ocv - _R0 * i(e);
+      Rbar(e) = _R0;
       if (_nonlinear)
       {
-        V(e) -= 2.0 * std::asinh(i(e) / (2.0 * _j0));
-        R(e) += 2.0 / std::sqrt(4.0 * _j0 * _j0 + i(e) * i(e));
+        Vbar(e) -= 2.0 * std::asinh(i(e) / (2.0 * _j0));
+        Rbar(e) += 2.0 / std::sqrt(4.0 * _j0 * _j0 + i(e) * i(e));
       }
     }
   }

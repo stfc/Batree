@@ -9,9 +9,29 @@
 class CurrentCollectorOperator
 {
 protected:
-  mfem::ParFiniteElementSpace & h1_fespace_current_collector_positive;
-  mfem::ParFiniteElementSpace & h1_fespace_current_collector_negative;
-  mfem::ParFiniteElementSpace & l2_fespace_currents;
+  /// 2d serial meshes of the positive and negative current collectors (domain plus tab)
+  mfem::Mesh _pos_smesh;
+  mfem::Mesh _neg_smesh;
+
+  /// Element-to-rank maps of the two serial meshes. Each domain element goes to the same rank in
+  /// both collectors, so that on every rank element e of the current space is element e of both
+  /// H1 spaces (the coupling blocks C pair elements by their local number).
+  mfem::Array<int> _pos_partitioning;
+  mfem::Array<int> _neg_partitioning;
+
+  /// Parallel meshes defined by a partitioning of the respective serial mesh
+  mfem::ParMesh _pos_pmesh;
+  mfem::ParMesh _neg_pmesh;
+
+  /// Collector domain without the tab (attribute 1), where the element currents live
+  mfem::ParSubMesh _dom_pmesh;
+
+  /// FE collections and spaces: H1 potentials in each collector, L2 element currents
+  mfem::H1_FECollection _h1_coll;
+  mfem::L2_FECollection _l2_coll;
+  mfem::ParFiniteElementSpace h1_fespace_current_collector_positive;
+  mfem::ParFiniteElementSpace h1_fespace_current_collector_negative;
+  mfem::ParFiniteElementSpace l2_fespace_currents;
 
   ChargeBalance * _cbp = nullptr; // charge balance for positive current collector
   ChargeBalance * _cbn = nullptr; // charge balance for negative current collector
@@ -54,15 +74,14 @@ protected:
   mfem::BlockVector & _x;
 
 public:
-  CurrentCollectorOperator(mfem::ParFiniteElementSpace *& f_pos,
-                           mfem::ParFiniteElementSpace *& f_neg,
-                           mfem::ParFiniteElementSpace *& f_l2,
-                           const unsigned & ndofs,
-                           mfem::BlockVector & x);
+  /// order: FE order of the collector potentials. refinements: uniform refinements of both
+  /// collector meshes (0 uses the meshes as read).
+  CurrentCollectorOperator(int order, int refinements, mfem::BlockVector & x);
 
   /// One linear solve of the 3x3 system. _Bcc(2,2) and block 2 of the RHS must be set
-  /// first (SolveCoupled does this).
-  virtual void Solve();
+  /// first (SolveCoupled does this). Returns false if the iterative solver (used when MFEM has
+  /// no SuperLU) did not converge.
+  virtual bool Solve();
 
   /// Couple the collectors to a local cell model V̄(ī), at one instant in time.
   /// Each pass solves the 3x3 system with D = M diag(R̄) in the (2,2) block and

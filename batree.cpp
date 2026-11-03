@@ -3,12 +3,6 @@
 #include "operators/EChemOperator.hpp"
 #include "operators/CurrentCollectorOperator.hpp"
 
-// BATREE_DIR is set by the makefile to the project folder (-DBATREE_DIR=...).
-// When built without the makefile, fall back to paths relative to where batree is run.
-#ifndef BATREE_DIR
-#define BATREE_DIR "."
-#endif
-
 int
 main(int argc, char * argv[])
 {
@@ -32,6 +26,7 @@ main(int argc, char * argv[])
   mfem::real_t cc_R0 = 1.0;           // ohmic resistance of the local model (scaled)
   mfem::real_t cc_j0 = 0.5;           // exchange current of the nonlinear local model (scaled)
   mfem::real_t cc_omega = 1.0;        // relaxation factor for the element currents
+  int cc_refine = 0;                  // uniform refinements of the collector meshes
 
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
@@ -51,6 +46,8 @@ main(int argc, char * argv[])
   args.AddOption(&cc_R0, "-ccr", "--cc-resistance", "Local model ohmic resistance (scaled).");
   args.AddOption(&cc_j0, "-ccj", "--cc-j0", "Nonlinear local model exchange current (scaled).");
   args.AddOption(&cc_omega, "-ccw", "--cc-omega", "Relaxation factor for the element currents.");
+  args.AddOption(
+      &cc_refine, "-ccref", "--cc-refine", "Uniform refinements of the collector meshes.");
   args.Parse();
   if (!args.Good())
   {
@@ -79,81 +76,11 @@ main(int argc, char * argv[])
   // time-step dt).
   ode_solver->Init(oper);
 
-  // Current-collector meshes live in <project folder>/mesh, wherever batree is run from
-  const std::string mesh_dir = std::string(BATREE_DIR) + "/mesh/";
-
-  // Collector positive potentials (pp)
-  // Mesh
-  // current_collector_positive_mesh("/Users/karthikeyan.chockalingam/Projects/Batree/mesh/rectangle_current_collector_positive_scaled.msh",
-  // 1, 0);
-  mfem::Mesh current_collector_positive_mesh(
-      mesh_dir + "rectangle_current_collector_positive_scaled.msh", 1, 0);
-  // Mesh
-  // current_collector_positive_mesh("/Users/karthikeyan.chockalingam/Projects/Batree/mesh/rectangle_current_collector_pos_small.msh",
-  // 1, 0);
-  mfem::ParMesh * pp_pmesh = new mfem::ParMesh(MPI_COMM_WORLD, current_collector_positive_mesh);
-
-  // Define the H1 finite element spaces representing potentials in the positive current collector
-  mfem::H1_FECollection fe_current_collector_positive_coll(order, pp_pmesh->Dimension());
-
-  // Create FiniteElementSpace for the positive current collector
-  mfem::ParFiniteElementSpace * current_collector_positive_h1space;
-  current_collector_positive_h1space =
-      new mfem::ParFiniteElementSpace(pp_pmesh, &fe_current_collector_positive_coll);
-
-  // Collector negative potentials (np)
-  // Mesh
-  // current_collector_negative_mesh("/Users/karthikeyan.chockalingam/Projects/Batree/mesh/rectangle_current_collector_negative_scaled.msh",
-  // 1, 0);
-  mfem::Mesh current_collector_negative_mesh(
-      mesh_dir + "rectangle_current_collector_negative_scaled.msh", 1, 0);
-  // Mesh
-  // current_collector_negative_mesh("/Users/karthikeyan.chockalingam/Projects/Batree/mesh/rectangle_current_collector_neg_small.msh",
-  // 1, 0);
-  mfem::ParMesh * np_pmesh = new mfem::ParMesh(MPI_COMM_WORLD, current_collector_negative_mesh);
-
-  // Define the H1 finite element spaces representing potentials in the negative current collector
-  mfem::H1_FECollection fe_current_collector_negative_coll(order, np_pmesh->Dimension());
-
-  // Create FiniteElementSpace for the negative current collector
-  mfem::ParFiniteElementSpace * current_collector_negative_h1space;
-  current_collector_negative_h1space =
-      new mfem::ParFiniteElementSpace(np_pmesh, &fe_current_collector_negative_coll);
-
-  // This is the domain attribute (without tab) for the positive/negative current collector
-  mfem::Array<int> domain_attributes;
-  domain_attributes.Append(1);
-
-  // domain currents mesh
-  mfem::ParSubMesh dc_pmesh_currents(
-      mfem::ParSubMesh::CreateFromDomain(*pp_pmesh, domain_attributes));
-
-  // Define the L2 finite element spaces representing currents in the positive/negative current
-  // collector
-  mfem::L2_FECollection l2_fe_coll(0, dc_pmesh_currents.Dimension());
-
-  // Create FiniteElementSpace for currents in the positive/negative current collector
-  mfem::ParFiniteElementSpace * current_l2space;
-  current_l2space = new mfem::ParFiniteElementSpace(&dc_pmesh_currents, &l2_fe_coll);
-
-  // HYPRE_BigInt fe_msmd_size_owned = current_collector_positive_h1space->GetTrueVSize() +
-  //                                   current_collector_negative_h1space->GetTrueVSize() +
-  //                                   current_l2space->GetTrueVSize() + 1;
-  // The last one is for the scaler dof for the reference potential
-  HYPRE_BigInt fe_msmd_size_owned = current_collector_positive_h1space->GetTrueVSize() +
-                                    current_collector_negative_h1space->GetTrueVSize() +
-                                    current_l2space->GetTrueVSize(); // no reference potential dof
-
-  // The collector tab flux uses the external current I, which main's init_settings no longer
-  // sets, so set it before the collector equations are assembled.
+  // Current collectors (MSMD): the operator builds its own meshes and spaces. The collector tab
+  // flux uses the external current I, which init_settings does not set, so set it first.
   oper.SetCurrent(c_rate);
-
   mfem::BlockVector y;
-  CurrentCollectorOperator current_oper(current_collector_positive_h1space,
-                                        current_collector_negative_h1space,
-                                        current_l2space,
-                                        fe_msmd_size_owned,
-                                        y);
+  CurrentCollectorOperator current_oper(order, cc_refine, y);
 
   // Couple the collectors to the local model at one instant (the P2D is not connected yet).
   // OCV = 4.2 V, the same value the constant voltage coefficient used before.

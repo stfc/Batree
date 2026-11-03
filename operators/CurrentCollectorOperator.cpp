@@ -3,24 +3,129 @@
 #include <cmath>
 #include <cstdio>
 
-CurrentCollectorOperator::CurrentCollectorOperator(mfem::ParFiniteElementSpace *& f_pos,
-                                                   mfem::ParFiniteElementSpace *& f_neg,
-                                                   mfem::ParFiniteElementSpace *& f_l2,
-                                                   const unsigned & ndofs,
+// BATREE_DIR is set by the makefile to the project folder (-DBATREE_DIR=...).
+// When built without the makefile, fall back to paths relative to where batree is run.
+#ifndef BATREE_DIR
+#define BATREE_DIR "."
+#endif
+
+namespace
+{
+/// Domain (tab-free) attribute of both collector meshes
+const int DOMAIN_ATTRIBUTE = 1;
+
+/// Load a collector mesh from <project folder>/mesh and refine it uniformly. Refinement splits each
+/// element into children numbered consecutively, so the domain elements stay first and in the
+/// same order in both collectors.
+mfem::Mesh
+LoadCollectorMesh(const std::string & file, int refinements)
+{
+  mfem::Mesh mesh(std::string(BATREE_DIR) + "/mesh/" + file, 1, 0);
+  for (int r = 0; r < refinements; r++)
+    mesh.UniformRefinement();
+  return mesh;
+}
+
+/// Partition the positive collector with METIS, as ParMesh does by default.
+mfem::Array<int>
+PartitionPositive(mfem::Mesh & pos)
+{
+  int * p = pos.GeneratePartitioning(mfem::Mpi::WorldSize());
+  mfem::Array<int> partitioning(pos.GetNE());
+  for (int e = 0; e < pos.GetNE(); e++)
+    partitioning[e] = p[e];
+  delete[] p;
+  return partitioning;
+}
+
+/// Partition the negative collector to match the positive one: each domain element goes to the
+/// rank of the positive domain element at the same place, each tab element to the rank of the
+/// nearest positive domain element.
+mfem::Array<int>
+PartitionNegative(mfem::Mesh & pos, const mfem::Array<int> & pos_partitioning, mfem::Mesh & neg)
+{
+  mfem::Array<int> pos_domain;
+  for (int e = 0; e < pos.GetNE(); e++)
+    if (pos.GetAttribute(e) == DOMAIN_ATTRIBUTE)
+      pos_domain.Append(e);
+
+  mfem::Array<int> partitioning(neg.GetNE());
+  mfem::Vector c(neg.Dimension()), cp(pos.Dimension());
+  for (int e = 0; e < neg.GetNE(); e++)
+  {
+    neg.GetElementCenter(e, c);
+    int nearest = -1;
+    mfem::real_t dist = mfem::infinity();
+    for (int ep : pos_domain)
+    {
+      pos.GetElementCenter(ep, cp);
+      if (c.DistanceTo(cp) < dist)
+      {
+        dist = c.DistanceTo(cp);
+        nearest = ep;
+      }
+    }
+    if (neg.GetAttribute(e) == DOMAIN_ATTRIBUTE && dist > 1e-8 * pos.GetElementSize(nearest))
+      mfem::mfem_error("CurrentCollectorOperator: the domains of the positive and negative "
+                       "collector meshes do not match.");
+    partitioning[e] = pos_partitioning[nearest];
+  }
+  return partitioning;
+}
+
+/// The coupling blocks C (ParMixedBilinearForm) pair element e of the current space with element e
+/// of an H1 space. Check that they are the same element on this rank.
+void
+CheckSameElements(mfem::ParMesh & currents, mfem::ParMesh & collector)
+{
+  mfem::Vector c(currents.Dimension()), cc(collector.Dimension());
+  for (int e = 0; e < currents.GetNE(); e++)
+  {
+    bool same = e < collector.GetNE();
+    if (same)
+    {
+      currents.GetElementCenter(e, c);
+      collector.GetElementCenter(e, cc);
+      same = c.DistanceTo(cc) <= 1e-8 * currents.GetElementSize(e);
+    }
+    if (!same)
+      mfem::mfem_error("CurrentCollectorOperator: the current space and a collector space do not "
+                       "share their element order on this rank.");
+  }
+}
+}
+
+CurrentCollectorOperator::CurrentCollectorOperator(int order,
+                                                   int refinements,
                                                    mfem::BlockVector & x)
-  : h1_fespace_current_collector_positive(*f_pos),
-    h1_fespace_current_collector_negative(*f_neg),
-    l2_fespace_currents(*f_l2),
-    _Solver(f_neg->GetComm()),
+  : _pos_smesh(LoadCollectorMesh("rectangle_current_collector_positive_scaled.msh", refinements)),
+    _neg_smesh(LoadCollectorMesh("rectangle_current_collector_negative_scaled.msh", refinements)),
+    _pos_partitioning(PartitionPositive(_pos_smesh)),
+    _neg_partitioning(PartitionNegative(_pos_smesh, _pos_partitioning, _neg_smesh)),
+    _pos_pmesh(MPI_COMM_WORLD, _pos_smesh, _pos_partitioning.GetData()),
+    _neg_pmesh(MPI_COMM_WORLD, _neg_smesh, _neg_partitioning.GetData()),
+    _dom_pmesh(
+        mfem::ParSubMesh::CreateFromDomain(_pos_pmesh, mfem::Array<int>({DOMAIN_ATTRIBUTE}))),
+    _h1_coll(order, _pos_smesh.Dimension()),
+    _l2_coll(0, _pos_smesh.Dimension()),
+    h1_fespace_current_collector_positive(&_pos_pmesh, &_h1_coll),
+    h1_fespace_current_collector_negative(&_neg_pmesh, &_h1_coll),
+    l2_fespace_currents(&_dom_pmesh, &_l2_coll),
+    _Solver(MPI_COMM_WORLD),
     _x(x)
 {
-  const mfem::real_t rel_tol = 1e-8;
+  CheckSameElements(_dom_pmesh, _pos_pmesh);
+  CheckSameElements(_dom_pmesh, _neg_pmesh);
+
+  // GMRES must solve tightly: Newton on the element currents stops at 1e-10, and at 1e-8 the
+  // total current is only right to about 2e-6.
+  const mfem::real_t rel_tol = 1e-12;
 
   _Solver.iterative_mode = false;
   _Solver.SetRelTol(rel_tol);
   _Solver.SetAbsTol(0.0);
   _Solver.SetMaxIter(500);
-  _Solver.SetPrintLevel(1);
+  _Solver.SetPrintLevel(0); // only warn if GMRES does not converge
   _Solver.SetKDim(50);
   _Solver.SetPreconditioner(_I_prec);
 
@@ -62,7 +167,7 @@ CurrentCollectorOperator::CurrentCollectorOperator(mfem::ParFiniteElementSpace *
   // and block-row 2 of the RHS before each linear solve.
 }
 // replace Mult with Solve, does not take any parameters!
-void
+bool
 CurrentCollectorOperator::Solve()
 {
   _Bcc(0, 0) = &_cbp->GetK();
@@ -98,13 +203,21 @@ CurrentCollectorOperator::Solve()
   delete _Acc;
   _Acc = mfem::HypreParMatrixFromBlocks(_Bcc);
 
-  // use 4.2 for voltage cofficient (j)
-  //_Solver.SetOperator(*_Acc);
-  //_Solver.Mult(_f, _x);
-
-  mfem::MUMPSSolver direct_solver(_Acc->GetComm());
-  direct_solver.SetOperator(*_Acc);
+#ifdef MFEM_USE_SUPERLU
+  // Exact solve with SuperLU_DIST when MFEM has it: works at any mesh refinement.
+  mfem::SuperLURowLocMatrix A_superlu(*_Acc);
+  mfem::SuperLUSolver direct_solver(_Acc->GetComm());
+  direct_solver.SetPrintStatistics(false);
+  direct_solver.SetOperator(A_superlu);
   direct_solver.Mult(_f, _x);
+  return true;
+#else
+  // Otherwise GMRES. With this preconditioner it converges on the default collector mesh and one
+  // refinement of it, but not on finer meshes.
+  _Solver.SetOperator(*_Acc);
+  _Solver.Mult(_f, _x);
+  return _Solver.GetConverged();
+#endif
 }
 
 void
@@ -154,6 +267,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   }
 
   bool converged = false;
+  bool linear_solve_failed = false;
   for (int it = 0; it < max_it; it++)
   {
     // 1. Local cell models at the current guess: V̄ₑ(īₑ) and R̄ₑ = −dV̄ₑ/dī
@@ -178,7 +292,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
 
     // 5. Linear solve of the 3x3 system (diagnostics printed on the first pass only)
     _verbose = (it == 0);
-    Solve();
+    const bool solved = Solve();
 
     // 6. Convergence check on the element currents
     ihat = _x.GetBlock(2);
@@ -192,6 +306,13 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
 
     if (mfem::Mpi::Root())
       std::printf("%5d  %18.3e  %15.8f  %12.6f  %12.6f\n", it + 1, err, total, imin, imax);
+
+    // An unconverged linear solve gives a wrong î, so Newton cannot go on from it
+    if (!solved)
+    {
+      linear_solve_failed = true;
+      break;
+    }
 
     // 7. Update: ī ← (1 − ω) ī + ω î
     for (int e = 0; e < n; e++)
@@ -215,14 +336,17 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   _cbp->GetC().Mult(1.0, _x.GetBlock(0), -1.0, r);
   _cbn->GetC().Mult(1.0, _x.GetBlock(1), 1.0, r);
   const mfem::real_t res = global(r.Normlinf(), MPI_MAX) / scale;
+  const mfem::real_t rmin = global(n ? Rbar.Min() : mfem::infinity(), MPI_MIN);
+  const mfem::real_t rmax = global(n ? Rbar.Max() : -mfem::infinity(), MPI_MAX);
 
   if (mfem::Mpi::Root())
   {
     std::printf("Coupling %s; relative coupled residual = %.3e\n",
-                converged ? "converged" : "did NOT converge",
+                converged             ? "converged"
+                : linear_solve_failed ? "did NOT converge (the linear solver failed)"
+                                      : "did NOT converge",
                 res);
-    std::printf(
-        "Local slope R at the answer: %g .. %g\n", n ? Rbar.Min() : 0.0, n ? Rbar.Max() : 0.0);
+    std::printf("Local slope R at the answer: %g .. %g\n", rmin, rmax);
   }
 
   std::cout << "\n===== Converged solution =====\n";

@@ -17,28 +17,30 @@ CurrentConstraint::Update(const mfem::Coefficient & j)
   // Construct ColMat = col as an n2 x 1 HypreParMatrix
   // ------------------------------------------------------------
 
-  // 2. Local SparseMatrix setup: Local rows x 1 column
-  // Every processor views this locally as a simple 1-column matrix
-  mfem::SparseMatrix local_mat(fespace.GetTrueVSize(), 1);
-  // local_mat = 1;
-  for (int i = 0; i < fespace.GetTrueVSize(); i++)
-    local_mat.Set(i, 0, 1.0);
-  local_mat.Finalize();
+  // 2. Local rows in CSR form: every local row has a single 1 in global column 0
+  const int n = fespace.GetTrueVSize();
+  mfem::Array<int> row_ptr(n + 1);
+  mfem::Array<HYPRE_BigInt> col_idx(n);
+  mfem::Vector data(n);
+  for (int i = 0; i <= n; i++)
+    row_ptr[i] = i;
+  col_idx = 0;
+  data = 1.0;
 
-  // 3. Define global column partitioning (Must be identical on ALL ranks)
-  // Rank 0 owns global column 0. All other ranks own 0 columns.
-  HYPRE_BigInt col_starts[2];
-  col_starts[0] = 0;
-  col_starts[1] = 1;
+  // 3. Column partitioning: rank 0 owns global column 0, all other ranks own no columns
+  const HYPRE_BigInt col_starts[2] = {fespace.GetMyRank() == 0 ? 0 : 1, 1};
 
-  // 4. Construct the HypreParMatrix cleanly
-  // This constructor auto-generates the correct diag, offd, and cmap layout for you.
+  // 4. Construct the HypreParMatrix. This constructor splits each rank's rows into the columns
+  // it owns and the ones other ranks own, so the column can live on rank 0 only.
   ColMat = new mfem::HypreParMatrix(fespace.GetComm(),
+                                    n,                           // Local row count
                                     fespace.GlobalTrueVSize(),   // Global row count
                                     1,                           // Global col count
+                                    row_ptr.GetData(),           // CSR row pointers
+                                    col_idx.GetData(),           // CSR global column indices
+                                    data.GetData(),              // CSR values
                                     fespace.GetTrueDofOffsets(), // Global row partitioning array
-                                    col_starts,                  // Global col partitioning array
-                                    &local_mat);
+                                    col_starts);                 // Global col partitioning array
 
   Product = mfem::ParMult(&Mmat, ColMat);
 
