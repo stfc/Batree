@@ -27,6 +27,7 @@ main(int argc, char * argv[])
   mfem::real_t cc_j0 = 0.5;           // exchange current of the nonlinear local model (scaled)
   mfem::real_t cc_omega = 1.0;        // relaxation factor for the element currents
   int cc_refine = 0;                  // uniform refinements of the collector meshes
+  bool cc_paraview = false;           // write the collector solution for ParaView
 
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
@@ -48,6 +49,12 @@ main(int argc, char * argv[])
   args.AddOption(&cc_omega, "-ccw", "--cc-omega", "Relaxation factor for the element currents.");
   args.AddOption(
       &cc_refine, "-ccref", "--cc-refine", "Uniform refinements of the collector meshes.");
+  args.AddOption(&cc_paraview,
+                 "-ccpv",
+                 "--cc-paraview",
+                 "-no-ccpv",
+                 "--no-cc-paraview",
+                 "Write the collector solution (phi+, phi-, i) to ParaView/.");
   args.Parse();
   if (!args.Good())
   {
@@ -86,6 +93,8 @@ main(int argc, char * argv[])
   // OCV = 4.2 V, the same value the constant voltage coefficient used before.
   LocalModel local_model(cc_model, 4.2 / phi_scale, cc_R0, cc_j0);
   current_oper.SolveCoupled(local_model, cc_slope, cc_omega);
+  if (cc_paraview)
+    current_oper.SaveParaView(0, 0.0);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)

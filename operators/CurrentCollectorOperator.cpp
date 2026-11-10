@@ -358,6 +358,46 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   std::cout << "Solve completed" << std::endl;
 }
 
+void
+CurrentCollectorOperator::SaveParaView(int cycle, mfem::real_t time)
+{
+  if (!_pv_pos)
+  {
+    _phi_pos_gf.reset(new mfem::ParGridFunction(&h1_fespace_current_collector_positive));
+    _phi_neg_gf.reset(new mfem::ParGridFunction(&h1_fespace_current_collector_negative));
+    _i_gf.reset(new mfem::ParGridFunction(&l2_fespace_currents));
+
+    auto make = [](const std::string & name,
+                   mfem::ParMesh & mesh,
+                   const std::string & field,
+                   mfem::ParGridFunction & gf,
+                   int order)
+    {
+      auto * dc = new mfem::ParaViewDataCollection(name, &mesh);
+      dc->SetPrefixPath("ParaView");
+      dc->SetLevelsOfDetail(order);
+      dc->SetHighOrderOutput(order > 1);
+      dc->SetDataFormat(mfem::VTKFormat::BINARY);
+      dc->RegisterField(field, &gf);
+      return dc;
+    };
+    const int order = h1_fespace_current_collector_positive.GetMaxElementOrder();
+    _pv_pos.reset(make("CollectorPositive", _pos_pmesh, "phi_positive", *_phi_pos_gf, order));
+    _pv_neg.reset(make("CollectorNegative", _neg_pmesh, "phi_negative", *_phi_neg_gf, order));
+    _pv_dom.reset(make("CollectorCurrents", _dom_pmesh, "i", *_i_gf, 1));
+  }
+
+  _phi_pos_gf->SetFromTrueDofs(_x.GetBlock(0));
+  _phi_neg_gf->SetFromTrueDofs(_x.GetBlock(1));
+  _i_gf->SetFromTrueDofs(_x.GetBlock(2));
+  for (mfem::ParaViewDataCollection * dc : {_pv_pos.get(), _pv_neg.get(), _pv_dom.get()})
+  {
+    dc->SetCycle(cycle);
+    dc->SetTime(time);
+    dc->Save();
+  }
+}
+
 CurrentCollectorOperator::~CurrentCollectorOperator()
 {
   // for (int i = 0; i < _Bcc.NumRows(); i++)

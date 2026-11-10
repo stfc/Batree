@@ -4,6 +4,8 @@
 #include "equations/CurrentConstraint.hpp"
 #include "operators/LocalModel.hpp"
 
+#include <memory>
+
 // remove inheritence from Operator class
 //  possibly rename bcc by acc
 class CurrentCollectorOperator
@@ -73,6 +75,11 @@ protected:
   /// Reference to solution true dof vector
   mfem::BlockVector & _x;
 
+  /// ParaView output, created on the first SaveParaView call: the grid functions for φ⁺, φ⁻
+  /// and i, and one data collection per mesh
+  std::unique_ptr<mfem::ParGridFunction> _phi_pos_gf, _phi_neg_gf, _i_gf;
+  std::unique_ptr<mfem::ParaViewDataCollection> _pv_pos, _pv_neg, _pv_dom;
+
 public:
   /// order: FE order of the collector potentials. refinements: uniform refinements of both
   /// collector meshes (0 uses the meshes as read).
@@ -94,6 +101,11 @@ public:
                     mfem::real_t omega = 1.0,
                     mfem::real_t tol = 1e-10,
                     int max_it = 40);
+
+  /// Write φ⁺ and φ⁻ (H1, on the positive and negative collector meshes) and i (L2, on the
+  /// tab-free domain) to ParaView/, one collection per mesh. cycle and time label this output
+  /// in the time series.
+  void SaveParaView(int cycle, mfem::real_t time);
 
   virtual ~CurrentCollectorOperator();
 };
