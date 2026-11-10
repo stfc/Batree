@@ -1,6 +1,7 @@
 // Batree - An MFEM-based SPM, SPMe and P2D solver
 
 #include "operators/EChemOperator.hpp"
+#include "operators/CurrentCollectorOperator.hpp"
 
 int
 main(int argc, char * argv[])
@@ -19,6 +20,15 @@ main(int argc, char * argv[])
   mfem::real_t dt = 1.0;
   int output_steps = 5;
 
+  // Current-collector coupling test: a local model stands in for the per-element P2D
+  std::string cc_model = "nonlinear"; // local model: linear or nonlinear
+  std::string cc_slope = "exact";     // exact (Newton), frozen (chord) or none (report's Option 1)
+  mfem::real_t cc_R0 = 1.0;           // ohmic resistance of the local model (scaled)
+  mfem::real_t cc_j0 = 0.5;           // exchange current of the nonlinear local model (scaled)
+  mfem::real_t cc_omega = 1.0;        // relaxation factor for the element currents
+  int cc_refine = 0;                  // uniform refinements of the collector meshes
+  bool cc_paraview = false;           // write the collector solution for ParaView
+
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
   args.AddOption(&cell, "-c", "--cell", "Cell model: LGM50 or Enertech.");
@@ -28,6 +38,23 @@ main(int argc, char * argv[])
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
   args.AddOption(&dt, "-dt", "--time-step", "Time step.");
   args.AddOption(&output_steps, "-os", "--output-steps", "Output every n-th timestep.");
+  args.AddOption(
+      &cc_model, "-ccm", "--cc-model", "Collector test local model: linear or nonlinear.");
+  args.AddOption(&cc_slope,
+                 "-ccs",
+                 "--cc-slope",
+                 "Collector coupling slope: exact (Newton), frozen (chord) or none (Picard).");
+  args.AddOption(&cc_R0, "-ccr", "--cc-resistance", "Local model ohmic resistance (scaled).");
+  args.AddOption(&cc_j0, "-ccj", "--cc-j0", "Nonlinear local model exchange current (scaled).");
+  args.AddOption(&cc_omega, "-ccw", "--cc-omega", "Relaxation factor for the element currents.");
+  args.AddOption(
+      &cc_refine, "-ccref", "--cc-refine", "Uniform refinements of the collector meshes.");
+  args.AddOption(&cc_paraview,
+                 "-ccpv",
+                 "--cc-paraview",
+                 "-no-ccpv",
+                 "--no-cc-paraview",
+                 "Write the collector solution (phi+, phi-, i) to ParaView/.");
   args.Parse();
   if (!args.Good())
   {
@@ -55,6 +82,19 @@ main(int argc, char * argv[])
   // Perform time-integration (looping over the time iterations, ti, with a
   // time-step dt).
   ode_solver->Init(oper);
+
+  // Current collectors (MSMD): the operator builds its own meshes and spaces. The collector tab
+  // flux uses the external current I, which init_settings does not set, so set it first.
+  oper.SetCurrent(c_rate);
+  mfem::BlockVector y;
+  CurrentCollectorOperator current_oper(order, cc_refine, y);
+
+  // Couple the collectors to the local model at one instant (the P2D is not connected yet).
+  // OCV = 4.2 V, the same value the constant voltage coefficient used before.
+  LocalModel local_model(cc_model, 4.2 / phi_scale, cc_R0, cc_j0);
+  current_oper.SolveCoupled(local_model, cc_slope, cc_omega);
+  if (cc_paraview)
+    current_oper.SaveParaView(0, 0.0);
 
   bool last_step = false;
   for (int ti = 1; !last_step; ti++)
