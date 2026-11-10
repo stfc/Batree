@@ -20,7 +20,13 @@ const int DOMAIN_ATTRIBUTE = 1;
 mfem::Mesh
 LoadCollectorMesh(const std::string & file, int refinements)
 {
+  // Every rank reads the mesh. MFEM fixes the clockwise tab elements of the collector meshes as it
+  // reads them, and Debug builds report this; keep that report to rank 0, so other ranks print
+  // nothing (output from several ranks arrives in no fixed order).
+  if (!mfem::Mpi::Root())
+    mfem::out.Disable();
   mfem::Mesh mesh(std::string(BATREE_DIR) + "/mesh/" + file, 1, 0);
+  mfem::out.Enable();
   for (int r = 0; r < refinements; r++)
     mesh.UniformRefinement();
   return mesh;
@@ -139,9 +145,12 @@ CurrentCollectorOperator::CurrentCollectorOperator(int order,
   // std::cout << "size of _block_trueOffsets = " << _block_trueOffsets[0] << ", " <<
   // _block_trueOffsets[1] << ", " << _block_trueOffsets[2] << ", "
   //           << _block_trueOffsets[3] << ", " << _block_trueOffsets[4] << std::endl;
-  std::cout << "size of _block_trueOffsets = " << _block_trueOffsets[0] << ", "
-            << _block_trueOffsets[1] << ", " << _block_trueOffsets[2] << ", "
-            << _block_trueOffsets[3] << std::endl;
+  // Print on rank 0 only (with its own block sizes): output from several ranks arrives in no
+  // fixed order, and could land among rank 0's time-step output, which CI compares.
+  if (mfem::Mpi::Root())
+    std::cout << "size of _block_trueOffsets = " << _block_trueOffsets[0] << ", "
+              << _block_trueOffsets[1] << ", " << _block_trueOffsets[2] << ", "
+              << _block_trueOffsets[3] << std::endl;
 
   _block_trueOffsets.PartialSum();
 
@@ -154,7 +163,8 @@ CurrentCollectorOperator::CurrentCollectorOperator(int order,
 
   _Bcc = nullptr;
 
-  std::cout << "CurrentCollectorOperator constructed" << std::endl;
+  if (mfem::Mpi::Root())
+    std::cout << "CurrentCollectorOperator constructed" << std::endl;
   _cbp->Update();
   _cbn->Update();
   mfem::ConstantCoefficient voltage(4.2 / phi_scale);
@@ -349,13 +359,20 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
     std::printf("Local slope R at the answer: %g .. %g\n", rmin, rmax);
   }
 
-  std::cout << "\n===== Converged solution =====\n";
-  for (int i = 0; i < 3; i++)
+  // The full solution is printed on 1 rank only. In parallel each rank holds just its own part,
+  // and output from several ranks arrives in no fixed order, so it could land among rank 0's
+  // time-step output, which CI compares. Use -ccpv to look at parallel solutions.
+  if (mfem::Mpi::WorldSize() == 1)
   {
-    std::cout << "\n===== Converged solution block " << i << " =====\n";
-    _x.GetBlock(i).Print(std::cout);
+    std::cout << "\n===== Converged solution =====\n";
+    for (int i = 0; i < 3; i++)
+    {
+      std::cout << "\n===== Converged solution block " << i << " =====\n";
+      _x.GetBlock(i).Print(std::cout);
+    }
   }
-  std::cout << "Solve completed" << std::endl;
+  if (mfem::Mpi::Root())
+    std::cout << "Solve completed" << std::endl;
 }
 
 void
