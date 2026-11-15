@@ -245,7 +245,7 @@ init_settings(std::string m, std::string c, int order)
   Acs_p_scale = Acs_p / L0 / L0;
   Acs_n_scale = Acs_n / L0 / L0;
 
-  i0 = CELL->I_typ() / A_area; // scaled distribution of the transverse current density
+  i0 = CELL->I_typ() / CELL->cell_area(); // the P2D's 1C current density [A m^-2]
 
   beta_p = i0 * L0 / phi_scale / sigma_p;
   beta_n = i0 * L0 / phi_scale / sigma_n;
