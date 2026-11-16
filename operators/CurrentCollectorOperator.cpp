@@ -230,6 +230,26 @@ CurrentCollectorOperator::Solve()
 #endif
 }
 
+mfem::real_t
+CurrentCollectorOperator::TerminalVoltage() const
+{
+  // Zp is the uniform tab flux, so Zp · φ⁺ / ΣZp is the mean of φ⁺ over the tab
+  MPI_Comm comm = h1_fespace_current_collector_positive.GetComm();
+  const mfem::Vector & Zp = _cbp->GetZ();
+  mfem::Vector ones(Zp.Size());
+  ones = 1.0;
+  return mfem::InnerProduct(comm, Zp, _x.GetBlock(0)) / mfem::InnerProduct(comm, Zp, ones);
+}
+
+void
+CurrentCollectorOperator::ElementAreas(mfem::Vector & area) const
+{
+  mfem::Vector ones(NumElements());
+  ones = 1.0;
+  area.SetSize(NumElements());
+  _cc->GetM().Mult(ones, area);
+}
+
 CouplingInfo
 CurrentCollectorOperator::SolveCoupled(CellModel & model,
                                        const std::string & slope,

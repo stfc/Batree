@@ -2,6 +2,9 @@
 
 #include "operators/EChemOperator.hpp"
 #include "operators/CurrentCollectorOperator.hpp"
+#include "operators/EChemCellModel.hpp"
+
+#include <chrono>
 
 int
 main(int argc, char * argv[])
@@ -21,7 +24,7 @@ main(int argc, char * argv[])
   int output_steps = 5;
 
   // Current-collector coupling test: a local model stands in for the per-element P2D
-  std::string cc_model = "nonlinear"; // local model: linear or nonlinear
+  std::string cc_model = "nonlinear"; // local model: linear, nonlinear or echem (the -m model)
   std::string cc_slope = "exact";     // exact (Newton), frozen (chord) or none (report's Option 1)
   mfem::real_t cc_R0 = 1.0;           // ohmic resistance of the local model (scaled)
   mfem::real_t cc_j0 = 0.5;           // exchange current of the nonlinear local model (scaled)
@@ -30,6 +33,7 @@ main(int argc, char * argv[])
   bool cc_paraview = false;           // write the collector solution for ParaView
   mfem::real_t cc_tol = 1e-10;        // coupling tolerance on the element currents
   mfem::real_t cc_scl = 1e-3;         // P2D self-consistency threshold
+  mfem::real_t cc_h = 1e-5;           // finite-difference step for R̄ (echem coupling)
 
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
@@ -40,10 +44,13 @@ main(int argc, char * argv[])
   args.AddOption(&t_final, "-tf", "--t-final", "Final time; start time is 0.");
   args.AddOption(&dt, "-dt", "--time-step", "Time step.");
   args.AddOption(&output_steps, "-os", "--output-steps", "Output every n-th timestep.");
-  args.AddOption(
-      &cc_model, "-ccm", "--cc-model", "Collector test local model: linear or nonlinear.");
+  args.AddOption(&cc_model,
+                 "-ccm",
+                 "--cc-model",
+                 "Collector cell model: linear, nonlinear (stand-ins) or echem (the -m model).");
   args.AddOption(&cc_tol, "-cctol", "--cc-tol", "Coupling tolerance on the element currents.");
   args.AddOption(&cc_scl, "-ccscl", "--cc-scl", "P2D self-consistency threshold.");
+  args.AddOption(&cc_h, "-cch", "--cc-h", "Finite-difference step for the slope R (echem).");
   args.AddOption(&cc_slope,
                  "-ccs",
                  "--cc-slope",
@@ -93,6 +100,69 @@ main(int argc, char * argv[])
   oper.SetCurrent(c_rate);
   mfem::BlockVector y;
   CurrentCollectorOperator current_oper(order, cc_refine, y);
+
+  if (cc_model == "echem")
+  {
+    // Every collector element runs its own cell (the -m model), and the collectors couple them
+    // at every time step.
+    MFEM_VERIFY(mfem::Mpi::WorldSize() == 1, "-ccm echem runs in serial only for now.");
+    mfem::Vector area;
+    current_oper.ElementAreas(area);
+    EChemCellModel cells(oper, *ode_solver, x, t, dt, current_oper.NumElements(), cc_h);
+
+    const auto start = std::chrono::steady_clock::now();
+    int total_passes = 0, unconverged = 0;
+    bool last_step = false;
+    for (int ti = 1; !last_step; ti++)
+    {
+      const CouplingInfo info =
+          current_oper.SolveCoupled(cells, cc_slope, cc_omega, cc_tol, 40, ti == 1);
+      cells.Commit();
+      t += dt;
+      // The element steps changed the global I; set it back to the cell current
+      oper.SetCurrent(c_rate);
+      total_passes += info.passes;
+      unconverged += !info.converged;
+
+      const mfem::real_t V = phi_scale * current_oper.TerminalVoltage();
+      last_step =
+          (t_final >= 0 && t + dt / 2 >= t_final) || V <= CELL->lvoff() || V >= CELL->uvoff();
+
+      if (output_steps && ti == 1)
+        std::cout << "\nstep\ttime[s]\tvoltage[V]\tSoC[%]\tSoC_min\tSoC_max\tpasses\tconv"
+                     "\tresidual\ti_min\ti_max\tR_min\tR_max\n";
+      if (output_steps && (last_step || (ti % output_steps) == 0 || !info.converged))
+      {
+        mfem::real_t soc, soc_min, soc_max;
+        cells.SoC(area, soc, soc_min, soc_max);
+        std::printf("%d\t%g\t%.7f\t%.4f\t%.4f\t%.4f\t%d\t%d\t%.2e\t%.6f\t%.6f\t%.4f\t%.4f\n",
+                    ti,
+                    t,
+                    V,
+                    soc,
+                    soc_min,
+                    soc_max,
+                    info.passes,
+                    int(info.converged),
+                    info.residual,
+                    info.imin,
+                    info.imax,
+                    info.rmin,
+                    info.rmax);
+      }
+    }
+    const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
+    std::printf("\nCoupled run: %g s simulated, %d coupling passes, %d unconverged steps, %ld cell "
+                "steps, %.1f s wall\n",
+                t,
+                total_passes,
+                unconverged,
+                cells.Steps(),
+                wall.count());
+    if (cc_paraview)
+      current_oper.SaveParaView(0, t);
+    return 0;
+  }
 
   // Couple the collectors to the local model at one instant (the P2D is not connected yet).
   // OCV = 4.2 V, the same value the constant voltage coefficient used before.

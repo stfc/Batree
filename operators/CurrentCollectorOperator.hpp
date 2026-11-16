@@ -114,6 +114,14 @@ public:
                             int max_it = 40,
                             bool report = true);
 
+  /// Terminal voltage (scaled) of the last solution: the mean of φ⁺ over the positive tab, where
+  /// the current enters uniformly. φ⁻ is 0 on the negative tab.
+  mfem::real_t TerminalVoltage() const;
+
+  /// Number of local collector elements, and their areas (scaled)
+  int NumElements() const { return l2_fespace_currents.GetTrueVSize(); }
+  void ElementAreas(mfem::Vector & area) const;
+
   /// Write φ⁺ and φ⁻ (H1, on the positive and negative collector meshes) and i (L2, on the
   /// tab-free domain) to ParaView/, one collection per mesh. cycle and time label this output
   /// in the time series.
