@@ -21,8 +21,8 @@ public:
 ///   linear:     V = OCV − R0 i
 ///   nonlinear:  V = OCV − R0 i − 2 asinh(i / (2 j0))     (ohmic + Butler–Volmer-like)
 ///
-/// These are the same models as the Python prototype (newton_proto.py). A cell model that steps
-/// the real P2D per element implements the same interface.
+/// These are the same models as the Python prototype (newton_proto.py). EChemCellModel couples
+/// the real EChemOperator instead.
 class LocalModel : public CellModel
 {
 public:
