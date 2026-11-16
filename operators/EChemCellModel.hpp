@@ -45,7 +45,12 @@ public:
       Vbar(e) = Step(e, i(e)); // taken last, so x holds the end state at iₑ
       _end[e] = _x;
       if (slope)
-        _Rbar(e) = -(Vh - Vbar(e)) / _h;
+      {
+        const mfem::real_t R = -(Vh - Vbar(e)) / _h;
+        if (R < _R_min)
+          _clamped++;
+        _Rbar(e) = std::max(R, _R_min);
+      }
     }
     Rbar.SetSize(i.Size());
     Rbar = _Rbar;
@@ -76,8 +81,9 @@ public:
     mean /= area.Sum();
   }
 
-  /// Cell time steps taken so far
+  /// Cell time steps taken so far, and slopes raised to the floor _R_min
   long Steps() const { return _steps; }
+  long Clamped() const { return _clamped; }
 
 private:
   /// One time step of element e's cell from its start-of-step state at scaled current I.
@@ -106,8 +112,11 @@ private:
   /// Start-of-step state of each element, and its end state from the last Eval
   std::vector<mfem::Vector> _start, _end;
 
-  /// Last finite-difference slopes
+  /// Last finite-difference slopes. A slope below _R_min (finite-difference noise) is raised to
+  /// it, so that D = M diag(R̄) stays positive.
   mfem::Vector _Rbar;
+  const mfem::real_t _R_min = 1e-6;
 
   long _steps = 0;
+  long _clamped = 0;
 };

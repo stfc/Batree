@@ -150,11 +150,12 @@ main(int argc, char * argv[])
     }
     const std::chrono::duration<double> wall = std::chrono::steady_clock::now() - start;
     std::printf("\nCoupled run: %g s simulated, %d coupling passes, %d unconverged steps, %ld cell "
-                "steps, %.1f s wall\n",
+                "steps, %ld clamped slopes, %.1f s wall\n",
                 t,
                 total_passes,
                 unconverged,
                 cells.Steps(),
+                cells.Clamped(),
                 wall.count());
     if (cc_paraview)
       current_oper.SaveParaView(0, t);
