@@ -32,7 +32,7 @@ main(int argc, char * argv[])
   int cc_refine = 0;                  // uniform refinements of the collector meshes
   bool cc_paraview = false;           // write the collector solution for ParaView
   mfem::real_t cc_tol = 1e-10;        // coupling tolerance on the element currents
-  mfem::real_t cc_scl = 1e-3;         // P2D self-consistency threshold
+  mfem::real_t cc_scl = 0.0;          // P2D self-consistency threshold; 0 picks the default
   mfem::real_t cc_h = 1e-5;           // finite-difference step for R̄ (echem coupling)
 
   mfem::OptionsParser args(argc, argv);
@@ -49,7 +49,10 @@ main(int argc, char * argv[])
                  "--cc-model",
                  "Collector cell model: linear, nonlinear (stand-ins) or echem (the -m model).");
   args.AddOption(&cc_tol, "-cctol", "--cc-tol", "Coupling tolerance on the element currents.");
-  args.AddOption(&cc_scl, "-ccscl", "--cc-scl", "P2D self-consistency threshold.");
+  args.AddOption(&cc_scl,
+                 "-ccscl",
+                 "--cc-scl",
+                 "P2D self-consistency threshold (0: 1e-8 with -ccm echem, otherwise 1e-3).");
   args.AddOption(&cc_h, "-cch", "--cc-h", "Finite-difference step for the slope R (echem).");
   args.AddOption(&cc_slope,
                  "-ccs",
@@ -72,6 +75,13 @@ main(int argc, char * argv[])
     args.PrintUsage(std::cout);
     return 1;
   }
+
+  // Stopping the self-consistency loop at 1e-3 makes the cell voltage jump by small amounts as
+  // the current changes. In the -ccm echem coupling, the finite-difference slope R̄ magnifies
+  // these jumps, and with strongly non-uniform currents the coupling can then stall or diverge.
+  // 1e-8 avoids this, at 2-3 times the cost and a voltage change of microvolts.
+  if (cc_scl <= 0.0)
+    cc_scl = cc_model == "echem" ? 1e-8 : 1e-3;
 
   if (mfem::Mpi::Root())
     args.PrintOptions(std::cout);
