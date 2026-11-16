@@ -86,7 +86,7 @@ protected:
   mfem::BlockVector _bc, _bp;
 
   /// Self-consistency loop "L2" error threshold (JuBat uses 1e-9)
-  const mfem::real_t _scl_threshold = 1e-3;
+  mfem::real_t _scl_threshold = 1e-3;
 
   /// Self-consistency loop 4-point integration rule
   mfem::IntegrationRule _scl_ir = mfem::IntegrationRules().Get(mfem::Geometry::Type::SEGMENT, 7);
@@ -112,6 +112,9 @@ public:
 
   /// Set the current at the time step to be solved for next
   void SetCurrent(const mfem::real_t & current) { I = current; };
+
+  /// Relative tolerance of the P2D self-consistency loop (default 1e-3)
+  void SetSelfConsistencyThreshold(mfem::real_t threshold) { _scl_threshold = threshold; }
 
   void SetPotentialGridFunctionsFromTrueVectors();
   void SetConcentrationGridFunctionsFromTrueVectors();

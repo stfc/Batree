@@ -28,6 +28,8 @@ main(int argc, char * argv[])
   mfem::real_t cc_omega = 1.0;        // relaxation factor for the element currents
   int cc_refine = 0;                  // uniform refinements of the collector meshes
   bool cc_paraview = false;           // write the collector solution for ParaView
+  mfem::real_t cc_tol = 1e-10;        // coupling tolerance on the element currents
+  mfem::real_t cc_scl = 1e-3;         // P2D self-consistency threshold
 
   mfem::OptionsParser args(argc, argv);
   args.AddOption(&model, "-m", "--model", "Electrochemical model: SPM, SPMe, or P2D.");
@@ -40,6 +42,8 @@ main(int argc, char * argv[])
   args.AddOption(&output_steps, "-os", "--output-steps", "Output every n-th timestep.");
   args.AddOption(
       &cc_model, "-ccm", "--cc-model", "Collector test local model: linear or nonlinear.");
+  args.AddOption(&cc_tol, "-cctol", "--cc-tol", "Coupling tolerance on the element currents.");
+  args.AddOption(&cc_scl, "-ccscl", "--cc-scl", "P2D self-consistency threshold.");
   args.AddOption(&cc_slope,
                  "-ccs",
                  "--cc-slope",
@@ -78,6 +82,7 @@ main(int argc, char * argv[])
   mfem::real_t t = 0.0;
   mfem::BlockVector x;
   EChemOperator oper(order, x);
+  oper.SetSelfConsistencyThreshold(cc_scl);
 
   // Perform time-integration (looping over the time iterations, ti, with a
   // time-step dt).
@@ -92,7 +97,7 @@ main(int argc, char * argv[])
   // Couple the collectors to the local model at one instant (the P2D is not connected yet).
   // OCV = 4.2 V, the same value the constant voltage coefficient used before.
   LocalModel local_model(cc_model, 4.2 / phi_scale, cc_R0, cc_j0);
-  current_oper.SolveCoupled(local_model, cc_slope, cc_omega);
+  current_oper.SolveCoupled(local_model, cc_slope, cc_omega, cc_tol);
   if (cc_paraview)
     current_oper.SaveParaView(0, 0.0);
 
