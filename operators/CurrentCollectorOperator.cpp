@@ -230,12 +230,13 @@ CurrentCollectorOperator::Solve()
 #endif
 }
 
-void
-CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
+CouplingInfo
+CurrentCollectorOperator::SolveCoupled(CellModel & model,
                                        const std::string & slope,
                                        mfem::real_t omega,
                                        mfem::real_t tol,
-                                       int max_it)
+                                       int max_it,
+                                       bool report)
 {
   if (slope != "exact" && slope != "frozen" && slope != "none")
     mfem::mfem_error("SolveCoupled: slope must be 'exact', 'frozen' or 'none'.");
@@ -269,7 +270,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   mfem::Vector Vbar, Rbar, Rused(n), w(n), ihat(n);
   Rused = 0.0;
 
-  if (mfem::Mpi::Root())
+  if (report && mfem::Mpi::Root())
   {
     std::printf(
         "\n===== Collector-cell coupling: slope = %s, omega = %g =====\n", slope.c_str(), omega);
@@ -278,13 +279,18 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
 
   bool converged = false;
   bool linear_solve_failed = false;
+  int passes = 0;
   for (int it = 0; it < max_it; it++)
   {
-    // 1. Local cell models at the current guess: V̄ₑ(īₑ) and R̄ₑ = −dV̄ₑ/dī
-    model.Eval(_ibar, Vbar, Rbar);
+    passes = it + 1;
+
+    // 1. Local cell models at the current guess: V̄ₑ(īₑ), and R̄ₑ = −dV̄ₑ/dī on the passes
+    //    that use it
+    const bool new_slope = slope == "exact" || (slope == "frozen" && it == 0);
+    model.Eval(_ibar, Vbar, Rbar, new_slope);
 
     // 2. Slope used in the matrix. "none" leaves it at 0 (the report's Option 1).
-    if (slope == "exact" || (slope == "frozen" && it == 0))
+    if (new_slope)
       Rused = Rbar;
 
     // 3. (2,2) block D = M diag(R_used). M is diagonal, so scaling its rows gives exactly
@@ -301,7 +307,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
     M.Mult(w, _f.GetBlock(2));
 
     // 5. Linear solve of the 3x3 system (diagnostics printed on the first pass only)
-    _verbose = (it == 0);
+    _verbose = report && (it == 0);
     const bool solved = Solve();
 
     // 6. Convergence check on the element currents
@@ -314,7 +320,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
     const mfem::real_t imin = global(n ? ihat.Min() : mfem::infinity(), MPI_MIN);
     const mfem::real_t imax = global(n ? ihat.Max() : -mfem::infinity(), MPI_MAX);
 
-    if (mfem::Mpi::Root())
+    if (report && mfem::Mpi::Root())
       std::printf("%5d  %18.3e  %15.8f  %12.6f  %12.6f\n", it + 1, err, total, imin, imax);
 
     // An unconverged linear solve gives a wrong î, so Newton cannot go on from it
@@ -339,8 +345,9 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
 
   // Residual of the coupled equations, block-row 2: Cp φ⁺ + Cn φ⁻ − M V̄(î).
   // This is the true coupled problem, with no R̄ terms, so it checks the answer itself.
+  // A cell model that steps cells keeps the states of this last Eval, at the answer î.
   mfem::Vector r(n);
-  model.Eval(ihat, Vbar, Rbar);
+  model.Eval(ihat, Vbar, Rbar, false);
   M.Mult(Vbar, r);
   const mfem::real_t scale = global(r.Normlinf(), MPI_MAX);
   _cbp->GetC().Mult(1.0, _x.GetBlock(0), -1.0, r);
@@ -349,7 +356,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   const mfem::real_t rmin = global(n ? Rbar.Min() : mfem::infinity(), MPI_MIN);
   const mfem::real_t rmax = global(n ? Rbar.Max() : -mfem::infinity(), MPI_MAX);
 
-  if (mfem::Mpi::Root())
+  if (report && mfem::Mpi::Root())
   {
     std::printf("Coupling %s; relative coupled residual = %.3e\n",
                 converged             ? "converged"
@@ -362,7 +369,7 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
   // The full solution is printed on 1 rank only. In parallel each rank holds just its own part,
   // and output from several ranks arrives in no fixed order, so it could land among rank 0's
   // time-step output, which CI compares. Use -ccpv to look at parallel solutions.
-  if (mfem::Mpi::WorldSize() == 1)
+  if (report && mfem::Mpi::WorldSize() == 1)
   {
     std::cout << "\n===== Converged solution =====\n";
     for (int i = 0; i < 3; i++)
@@ -371,8 +378,18 @@ CurrentCollectorOperator::SolveCoupled(const LocalModel & model,
       _x.GetBlock(i).Print(std::cout);
     }
   }
-  if (mfem::Mpi::Root())
+  if (report && mfem::Mpi::Root())
     std::cout << "Solve completed" << std::endl;
+
+  CouplingInfo info;
+  info.passes = passes;
+  info.converged = converged;
+  info.residual = res;
+  info.imin = global(n ? ihat.Min() : mfem::infinity(), MPI_MIN);
+  info.imax = global(n ? ihat.Max() : -mfem::infinity(), MPI_MAX);
+  info.rmin = rmin;
+  info.rmax = rmax;
+  return info;
 }
 
 void

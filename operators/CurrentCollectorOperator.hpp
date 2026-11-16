@@ -6,6 +6,16 @@
 
 #include <memory>
 
+/// Summary of one SolveCoupled call
+struct CouplingInfo
+{
+  int passes = 0;
+  bool converged = false;
+  mfem::real_t residual = 0.0;         // relative residual of the coupled equations at the answer
+  mfem::real_t imin = 0.0, imax = 0.0; // range of the element currents
+  mfem::real_t rmin = 0.0, rmax = 0.0; // range of the local slopes R̄ the model last returned
+};
+
 // remove inheritence from Operator class
 //  possibly rename bcc by acc
 class CurrentCollectorOperator
@@ -96,11 +106,13 @@ public:
   ///   slope = "exact"  : R̄ recomputed every pass (Newton)
   ///           "frozen" : R̄ from the first pass only (chord)
   ///           "none"   : R̄ = 0, the report's Option 1 (lagged Picard)
-  void SolveCoupled(const LocalModel & model,
-                    const std::string & slope,
-                    mfem::real_t omega = 1.0,
-                    mfem::real_t tol = 1e-10,
-                    int max_it = 40);
+  /// The model is asked for R̄ only on the passes that use it. report = false prints nothing.
+  CouplingInfo SolveCoupled(CellModel & model,
+                            const std::string & slope,
+                            mfem::real_t omega = 1.0,
+                            mfem::real_t tol = 1e-10,
+                            int max_it = 40,
+                            bool report = true);
 
   /// Write φ⁺ and φ⁻ (H1, on the positive and negative collector meshes) and i (L2, on the
   /// tab-free domain) to ParaView/, one collection per mesh. cycle and time label this output

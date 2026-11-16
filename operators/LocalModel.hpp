@@ -3,16 +3,27 @@
 #include <cmath>
 #include <string>
 
-/// Stand-in for the per-element P2D cell model, used to test the collector-cell coupling
-/// before the real P2D is connected. For each current-collector element e it returns the
-/// cell voltage V̄ₑ(īₑ) and the local resistance R̄ₑ = −dV̄ₑ/dīₑ (scaled units).
+/// A cell model for every current-collector element e: given the element currents i, it returns
+/// the cell voltage V̄ₑ(iₑ) and, when asked, the local resistance R̄ₑ = −dV̄ₑ/diₑ (scaled units).
+class CellModel
+{
+public:
+  /// Vbar(e) = V̄ₑ(i(e)) for every local element e. If slope is true, also Rbar(e) = −dV̄ₑ/di at
+  /// i(e); otherwise Rbar holds the last slope the model computed (it is only reported then).
+  virtual void
+  Eval(const mfem::Vector & i, mfem::Vector & Vbar, mfem::Vector & Rbar, bool slope) = 0;
+
+  virtual ~CellModel() = default;
+};
+
+/// Stand-in for the per-element P2D cell model, used to test the collector-cell coupling.
 ///
 ///   linear:     V = OCV − R0 i
 ///   nonlinear:  V = OCV − R0 i − 2 asinh(i / (2 j0))     (ohmic + Butler–Volmer-like)
 ///
-/// These are the same models as the Python prototype (newton_proto.py). Later, Eval() is
-/// replaced by one P2D step per element: V̄ₑ from the step, R̄ₑ from a finite difference.
-class LocalModel
+/// These are the same models as the Python prototype (newton_proto.py). A cell model that steps
+/// the real P2D per element implements the same interface.
+class LocalModel : public CellModel
 {
 public:
   LocalModel(const std::string & type, mfem::real_t ocv, mfem::real_t R0, mfem::real_t j0)
@@ -22,8 +33,8 @@ public:
       mfem::mfem_error("LocalModel: type must be 'linear' or 'nonlinear'.");
   }
 
-  /// Vbar(e) = V̄ₑ(i(e)) and Rbar(e) = −dV̄ₑ/di at i(e), for every local element e.
-  void Eval(const mfem::Vector & i, mfem::Vector & Vbar, mfem::Vector & Rbar) const
+  /// The slope is exact and cheap, so it is always computed.
+  void Eval(const mfem::Vector & i, mfem::Vector & Vbar, mfem::Vector & Rbar, bool) override
   {
     Vbar.SetSize(i.Size());
     Rbar.SetSize(i.Size());
