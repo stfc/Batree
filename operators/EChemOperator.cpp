@@ -313,6 +313,7 @@ EChemOperator::SetReferencePotential()
     mfem::real_t Ipp = GetElectrodeReactionCurrent(PE, 1.0);
     mfem::real_t Ipn = GetElectrodeReactionCurrent(PE, -1.0);
 
+    const mfem::real_t I = _current;
     _rp_array[E] = -2.0 * T * log((I + sqrt(4.0 * Inp * Inn + I * I)) / (2.0 * Inp));
     _rp_array[PE] =
         2.0 * T * log((-I + sqrt(4.0 * Ipp * Ipn + I * I)) / (2.0 * Ipp)) + _rp_array[E];
@@ -395,7 +396,7 @@ void
 EChemOperator::ConstructReactionCurrent()
 {
   if (SPM || SPMe)
-    _j = new ReactionCurrentCoefficient();
+    _j = new ReactionCurrentCoefficient(_current);
   else if (P2D)
     _j = new ReactionCurrentCoefficient(*_jex, *_op);
 }
@@ -471,7 +472,7 @@ void
 EChemOperator::ConstructOverPotential()
 {
   if (SPM || SPMe)
-    _op = new OverPotentialCoefficient(*_jex);
+    _op = new OverPotentialCoefficient(_current, *_jex);
   else if (P2D)
     _op = new OverPotentialCoefficient(
         GetReferencePotential(E), GetReferencePotential(PE), _sp_gfc, _ep_gfc, *_ocp);
@@ -521,8 +522,8 @@ EChemOperator::GetVoltageMarquisCorrection()
   // Average log(ec) over each electrode for concentration overpotential
   mfem::real_t eta_c = 2.0 * T * (1 - TPLUS) * (log_ec_ne_avg - log_ec_pe_avg);
   // We use the average, not initial, electrolyte concentration for the electrolyte ohmic losses
-  mfem::real_t dphie = I / Kappa(ec_avg) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
-  mfem::real_t dphis = I / 3 * (LNE / SIGN + LPE / SIGP);
+  mfem::real_t dphie = _current / Kappa(ec_avg) * (LNE / BNE / 3.0 + LSEP / BSEP + LPE / BPE / 3.0);
+  mfem::real_t dphis = _current / 3 * (LNE / SIGN + LPE / SIGP);
 
   return eta_c + dphie + dphis;
 }

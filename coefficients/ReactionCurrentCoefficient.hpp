@@ -4,11 +4,14 @@ private:
   ExchangeCurrentCoefficient * _jex = nullptr;
   OverPotentialCoefficient * _op = nullptr;
 
+  /// SPM(e): the cell's scaled current, owned by its EChemOperator
+  const mfem::real_t * _current = nullptr;
+
   mfem::PWConstCoefficient _j_pwcc;
 
 public:
   /// SPM(e)
-  ReactionCurrentCoefficient() : _j_pwcc(3) {}
+  ReactionCurrentCoefficient(const mfem::real_t & current) : _current(&current), _j_pwcc(3) {}
 
   /// P2D
   ReactionCurrentCoefficient(ExchangeCurrentCoefficient & jex, OverPotentialCoefficient & op)
@@ -19,8 +22,8 @@ public:
   /// SPM(e)
   virtual mfem::PWConstCoefficient & Eval()
   {
-    _j_pwcc(NE) = +I / AN / LNE;
-    _j_pwcc(PE) = -I / AP / LPE;
+    _j_pwcc(NE) = +*_current / AN / LNE;
+    _j_pwcc(PE) = -*_current / AP / LPE;
     return _j_pwcc;
   }
 

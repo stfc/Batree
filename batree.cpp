@@ -95,11 +95,10 @@ main(int argc, char * argv[])
   // time-step dt).
   ode_solver->Init(oper);
 
-  // Current collectors (MSMD): the operator builds its own meshes and spaces. The collector tab
-  // flux uses the external current I, which init_settings does not set, so set it first.
-  oper.SetCurrent(c_rate);
+  // Current collectors (MSMD): the operator builds its own meshes and spaces. c_rate is the
+  // total current through the tabs.
   mfem::BlockVector y;
-  CurrentCollectorOperator current_oper(order, cc_refine, y);
+  CurrentCollectorOperator current_oper(order, cc_refine, c_rate, y);
 
   if (cc_model == "echem")
   {
@@ -119,8 +118,6 @@ main(int argc, char * argv[])
           current_oper.SolveCoupled(cells, cc_slope, cc_omega, cc_tol, 40, ti == 1);
       cells.Commit();
       t += dt;
-      // The element steps changed the global I; set it back to the cell current
-      oper.SetCurrent(c_rate);
       total_passes += info.passes;
       unconverged += !info.converged;
 

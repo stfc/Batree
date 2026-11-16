@@ -91,7 +91,8 @@ private:
     mfem::real_t t = _t, dt = _dt;
     _ode.Step(_x, t, dt);
     _steps++;
-    // Read the voltage now: the SPM and SPMe voltages read the global current I set above
+    // Read the voltage now, before the next element's step changes the operator's state and
+    // current (the SPM and SPMe voltages are computed from the current)
     return _oper.GetVoltage() / phi_scale;
   }
 

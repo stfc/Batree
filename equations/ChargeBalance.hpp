@@ -7,14 +7,16 @@ class ChargeBalance : public Equation
 protected:
   mfem::ParFiniteElementSpace & l2_fespace;
   const Region particle_region;
+  const mfem::real_t current; // scaled total current through the tabs
   mfem::ParMixedBilinearForm * C = nullptr;
   mfem::HypreParMatrix Cmat;
 
 public:
   ChargeBalance(mfem::ParFiniteElementSpace & h1,
                 mfem::ParFiniteElementSpace & l2,
-                const Region & region)
-    : Equation(h1), l2_fespace(l2), particle_region(region)
+                const Region & region,
+                mfem::real_t current)
+    : Equation(h1), l2_fespace(l2), particle_region(region), current(current)
   {
 
     if (particle_region == NE)

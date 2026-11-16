@@ -92,8 +92,9 @@ protected:
 
 public:
   /// order: FE order of the collector potentials. refinements: uniform refinements of both
-  /// collector meshes (0 uses the meshes as read).
-  CurrentCollectorOperator(int order, int refinements, mfem::BlockVector & x);
+  /// collector meshes (0 uses the meshes as read). current: scaled total current through the
+  /// tabs (the C-rate).
+  CurrentCollectorOperator(int order, int refinements, mfem::real_t current, mfem::BlockVector & x);
 
   /// One linear solve of the 3x3 system. _Bcc(2,2) and block 2 of the RHS must be set
   /// first (SolveCoupled does this). Returns false if the iterative solver (used when MFEM has

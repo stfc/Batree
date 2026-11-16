@@ -7,6 +7,9 @@ private:
   ExchangeCurrentCoefficient * _jex = nullptr;
   OpenCircuitPotentialCoefficient * _ocp = nullptr;
 
+  /// SPM(e): the cell's scaled current, owned by its EChemOperator
+  const mfem::real_t * _current = nullptr;
+
   const mfem::real_t * _rpe = nullptr;
   const mfem::real_t * _rpp = nullptr;
   mfem::PWCoefficient _rp_pwc;
@@ -15,7 +18,10 @@ private:
 
 public:
   /// SPM(e)
-  OverPotentialCoefficient(ExchangeCurrentCoefficient & jex) : _jex(&jex), _op_pwcc(3) {}
+  OverPotentialCoefficient(const mfem::real_t & current, ExchangeCurrentCoefficient & jex)
+    : _jex(&jex), _current(&current), _op_pwcc(3)
+  {
+  }
 
   /// P2D
   OverPotentialCoefficient(const mfem::real_t & rpe,
@@ -30,8 +36,8 @@ public:
   /// SPM(e)
   virtual mfem::PWConstCoefficient & Eval()
   {
-    _op_pwcc(NE) = 2 * T * asinh(+I / AN / LNE / 2.0 / _jex->Eval()(NE));
-    _op_pwcc(PE) = 2 * T * asinh(-I / AP / LPE / 2.0 / _jex->Eval()(PE));
+    _op_pwcc(NE) = 2 * T * asinh(+*_current / AN / LNE / 2.0 / _jex->Eval()(NE));
+    _op_pwcc(PE) = 2 * T * asinh(-*_current / AP / LPE / 2.0 / _jex->Eval()(PE));
     return _op_pwcc;
   }
 

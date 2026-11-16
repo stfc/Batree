@@ -103,6 +103,7 @@ CheckSameElements(mfem::ParMesh & currents, mfem::ParMesh & collector)
 
 CurrentCollectorOperator::CurrentCollectorOperator(int order,
                                                    int refinements,
+                                                   mfem::real_t current,
                                                    mfem::BlockVector & x)
   : _pos_smesh(LoadCollectorMesh("rectangle_current_collector_positive_scaled.msh", refinements)),
     _neg_smesh(LoadCollectorMesh("rectangle_current_collector_negative_scaled.msh", refinements)),
@@ -157,8 +158,8 @@ CurrentCollectorOperator::CurrentCollectorOperator(int order,
   _x.Update(_block_trueOffsets);
   _f.Update(_block_trueOffsets);
   // How to distinguish between the positive and negative current collector?
-  _cbp = new ChargeBalance(h1_fespace_current_collector_positive, l2_fespace_currents, PE);
-  _cbn = new ChargeBalance(h1_fespace_current_collector_negative, l2_fespace_currents, NE);
+  _cbp = new ChargeBalance(h1_fespace_current_collector_positive, l2_fespace_currents, PE, current);
+  _cbn = new ChargeBalance(h1_fespace_current_collector_negative, l2_fespace_currents, NE, current);
   _cc = new CurrentConstraint(l2_fespace_currents);
 
   _Bcc = nullptr;

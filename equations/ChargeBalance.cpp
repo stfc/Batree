@@ -7,7 +7,7 @@ ChargeBalance::Update()
   const mfem::real_t frac_one =
       particle_region == PE ? -delta_p_scale / beta_p : -delta_n_scale / beta_n;
   const mfem::real_t frac_two =
-      particle_region == PE ? -beta_p * (I / Acs_p_scale) : -beta_n * (I / Acs_n_scale);
+      particle_region == PE ? -beta_p * (current / Acs_p_scale) : -beta_n * (current / Acs_n_scale);
 
   mfem::ConstantCoefficient coeff(frac_one);
   mfem::ConstantCoefficient proc(frac_one * frac_two);

@@ -52,6 +52,10 @@ protected:
   /// Big-enough array for the reference potentials
   mfem::Array<mfem::real_t> _rp_array{/* E */ 0., /* NE */ 0., /* SEP */ 0., /* PE */ 0.};
 
+  /// Scaled external current of this cell (its C-rate), set with SetCurrent. Each operator has
+  /// its own, so several cells can run at different currents.
+  mfem::real_t _current = 1.0;
+
   /// Coefficients for derived, i.e. not solved for, quantities
   ReactionCurrentCoefficient * _j;
   ExchangeCurrentCoefficient * _jex;
@@ -111,7 +115,7 @@ public:
   ImplicitSolve(const mfem::real_t dt, const mfem::Vector & x, mfem::Vector & k) override;
 
   /// Set the current at the time step to be solved for next
-  void SetCurrent(const mfem::real_t & current) { I = current; };
+  void SetCurrent(const mfem::real_t & current) { _current = current; };
 
   /// Relative tolerance of the P2D self-consistency loop (default 1e-3)
   void SetSelfConsistencyThreshold(mfem::real_t threshold) { _scl_threshold = threshold; }

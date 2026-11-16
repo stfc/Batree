@@ -95,7 +95,6 @@ mfem::real_t SIGP = 0; // Scaled positive electrode conductivity.
 mfem::real_t SIGN = 0; // Scaled negative electrode conductivity.
 
 mfem::real_t CE0 = 0; // scaled initial Concentration of Electrolyte
-mfem::real_t I = 1.;  // scaled external current
 mfem::real_t T = 1.0; // scaled Temperature.
 
 mfem::real_t EPS_P = 0; // electrolyte volume fraction (porosity) in the positive electrode

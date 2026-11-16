@@ -168,7 +168,6 @@ extern const mfem::real_t beta_n; // scaled resistance of the negative current-c
 // Extras to be properly defined later.
 extern const mfem::real_t CE0; // scaled initial Concentration of Electrolyte
 extern const mfem::real_t T;   // scaled Temperature.
-extern mfem::real_t I;         // scaled external current
 
 extern const mfem::real_t EPS_P; // electrolyte volume fraction (porosity) in the positive electrode
 extern const mfem::real_t EPS_N; // electrolyte volume fraction (porosity) in the negative electrode
